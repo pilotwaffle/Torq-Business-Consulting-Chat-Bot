@@ -1,9 +1,14 @@
-
 import { Chat } from "@google/genai";
 
 export interface ChatMessage {
   role: 'user' | 'model';
   content: string;
+}
+
+export interface Conversation {
+  id: string;
+  timestamp: number;
+  messages: ChatMessage[];
 }
 
 export interface Consultant {

@@ -1,10 +1,9 @@
-
-import React, { useState, useCallback } from 'react';
-import { Chat } from "@google/genai";
+import React, { useState, useCallback, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatView } from './components/ChatView';
 import { getChatResponse } from './services/geminiService';
-import { ChatMessage, ChatSessions } from './types';
+import { saveChatHistory, loadChatHistory } from './services/storageService';
+import { ChatMessage, ChatSessions, Conversation } from './types';
 import { CONSULTANTS } from './constants';
 
 const App: React.FC = () => {
@@ -15,19 +14,92 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
 
+  const [chatHistory, setChatHistory] = useState<Map<string, Conversation[]>>(new Map());
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setChatHistory(loadChatHistory());
+  }, []);
+
+  useEffect(() => {
+    if (chatHistory.size > 0) {
+      saveChatHistory(chatHistory);
+    }
+  }, [chatHistory]);
+
+  useEffect(() => {
+    const consultantConvos = chatHistory.get(selectedConsultantId);
+    if (consultantConvos && consultantConvos.length > 0) {
+      const latestConvo = [...consultantConvos].sort((a, b) => b.timestamp - a.timestamp)[0];
+      setActiveConversationId(latestConvo.id);
+    } else {
+      setActiveConversationId(null);
+    }
+  }, [selectedConsultantId, chatHistory]);
+
+  useEffect(() => {
+    if (activeConversationId) {
+        const consultantConvos = chatHistory.get(selectedConsultantId) || [];
+        const activeConvo = consultantConvos.find(c => c.id === activeConversationId);
+        setMessages(activeConvo ? activeConvo.messages : []);
+    } else {
+        setMessages([]);
+    }
+  }, [activeConversationId, selectedConsultantId, chatHistory]);
+
 
   const handleSelectConsultant = (id: string) => {
     setSelectedConsultantId(id);
-    setMessages([]);
+    setError(null);
+    setFailedMessage(null);
+  };
+
+  const handleSelectConversation = (conversationId: string) => {
+    setActiveConversationId(conversationId);
+    const newSessions = new Map(chatSessions);
+    newSessions.delete(selectedConsultantId);
+    setChatSessions(newSessions);
     setError(null);
     setFailedMessage(null);
   };
 
   const handleNewChat = () => {
+    setActiveConversationId(null);
     setMessages([]);
+    const newSessions = new Map(chatSessions);
+    newSessions.delete(selectedConsultantId);
+    setChatSessions(newSessions);
     setError(null);
     setFailedMessage(null);
   };
+
+  const upsertConversation = useCallback((updatedMessages: ChatMessage[]) => {
+    setChatHistory(prevHistory => {
+        const newHistory = new Map(prevHistory);
+        const consultantConvos = newHistory.get(selectedConsultantId) || [];
+        let conversationId = activeConversationId;
+        let updatedConvos: Conversation[];
+
+        if (conversationId) {
+            updatedConvos = consultantConvos.map(convo =>
+                convo.id === conversationId
+                    ? { ...convo, messages: updatedMessages, timestamp: Date.now() }
+                    : convo
+            );
+        } else {
+            conversationId = `convo-${Date.now()}`;
+            const newConversation: Conversation = {
+                id: conversationId,
+                timestamp: Date.now(),
+                messages: updatedMessages,
+            };
+            updatedConvos = [...consultantConvos, newConversation];
+            setActiveConversationId(conversationId);
+        }
+        newHistory.set(selectedConsultantId, updatedConvos);
+        return newHistory;
+    });
+  }, [selectedConsultantId, activeConversationId]);
 
   const handleSendMessage = useCallback(async (userInput: string) => {
     if (!userInput.trim()) return;
@@ -35,7 +107,9 @@ const App: React.FC = () => {
     setError(null);
     setFailedMessage(null);
 
-    const newMessages: ChatMessage[] = [...messages, { role: 'user', content: userInput }];
+    const userMessage: ChatMessage = { role: 'user', content: userInput };
+    const currentMessages = messages;
+    const newMessages: ChatMessage[] = [...currentMessages, userMessage];
     setMessages(newMessages);
     setIsLoading(true);
 
@@ -48,7 +122,8 @@ const App: React.FC = () => {
       const { response, updatedSession } = await getChatResponse(
         selectedConsultant,
         chatSessions.get(selectedConsultantId),
-        userInput
+        userInput,
+        currentMessages
       );
 
       setChatSessions(prevSessions => {
@@ -57,7 +132,12 @@ const App: React.FC = () => {
         return newSessions;
       });
 
-      setMessages([...newMessages, { role: 'model', content: response }]);
+      // FIX: Explicitly type the model message to match ChatMessage interface.
+      const modelMessage: ChatMessage = { role: 'model', content: response };
+      const finalMessages = [...newMessages, modelMessage];
+      setMessages(finalMessages);
+      upsertConversation(finalMessages);
+
     } catch (e: any) {
       console.error("Error fetching chat response:", e);
       setError("Sorry, something went wrong. Please try again.");
@@ -65,12 +145,14 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, selectedConsultantId, chatSessions]);
+  }, [messages, selectedConsultantId, chatSessions, upsertConversation]);
 
   const handleRetry = useCallback(async () => {
     if (!failedMessage) return;
 
     const messageToRetry = failedMessage;
+    const history = messages.slice(0, messages.length -1); // remove last user message for history
+
     setError(null);
     setFailedMessage(null);
     setIsLoading(true);
@@ -80,11 +162,16 @@ const App: React.FC = () => {
         if (!selectedConsultant) {
             throw new Error("Selected consultant not found.");
         }
+        
+        const newSessions = new Map(chatSessions);
+        newSessions.delete(selectedConsultantId);
+        setChatSessions(newSessions);
 
         const { response, updatedSession } = await getChatResponse(
             selectedConsultant,
-            chatSessions.get(selectedConsultantId),
-            messageToRetry
+            undefined,
+            messageToRetry,
+            history
         );
 
         setChatSessions(prevSessions => {
@@ -92,8 +179,13 @@ const App: React.FC = () => {
             newSessions.set(selectedConsultantId, updatedSession);
             return newSessions;
         });
+        
+        // FIX: Explicitly type the model message to match ChatMessage interface.
+        const modelMessage: ChatMessage = { role: 'model', content: response };
+        const finalMessages = [...messages, modelMessage];
+        setMessages(finalMessages);
+        upsertConversation(finalMessages);
 
-        setMessages(prevMessages => [...prevMessages, { role: 'model', content: response }]);
     } catch (e: any) {
         console.error("Error retrying chat response:", e);
         setError("Sorry, the attempt to retry failed. Please try again.");
@@ -101,7 +193,7 @@ const App: React.FC = () => {
     } finally {
         setIsLoading(false);
     }
-  }, [failedMessage, selectedConsultantId, chatSessions]);
+  }, [failedMessage, selectedConsultantId, chatSessions, messages, upsertConversation]);
 
   const selectedConsultant = CONSULTANTS.find(c => c.id === selectedConsultantId) || CONSULTANTS[0];
 
@@ -112,6 +204,9 @@ const App: React.FC = () => {
         selectedConsultantId={selectedConsultantId}
         onSelectConsultant={handleSelectConsultant}
         onNewChat={handleNewChat}
+        chatHistory={chatHistory}
+        activeConversationId={activeConversationId}
+        onSelectConversation={handleSelectConversation}
       />
       <main className="flex-1 flex flex-col h-screen">
         <ChatView

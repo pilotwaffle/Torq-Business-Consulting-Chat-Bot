@@ -1,5 +1,5 @@
-import { GoogleGenAI, Chat } from "@google/genai";
-import { Consultant } from '../types';
+import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
+import { Consultant, ChatMessage } from '../types';
 
 let ai: GoogleGenAI | null = null;
 
@@ -16,21 +16,28 @@ const getAi = () => {
 export const getChatResponse = async (
     consultant: Consultant,
     session: Chat | undefined,
-    prompt: string
+    prompt: string,
+    history: ChatMessage[]
 ): Promise<{ response: string; updatedSession: Chat; }> => {
     const genAI = getAi();
     let chatSession = session;
 
     if (!chatSession) {
+        const genAIHistory = history.map(msg => ({
+            role: msg.role,
+            parts: [{ text: msg.content }]
+        }));
+
         chatSession = genAI.chats.create({
             model: consultant.model,
+            history: genAIHistory,
             config: {
                 systemInstruction: consultant.systemInstruction,
             },
         });
     }
 
-    const result = await chatSession.sendMessage({ message: prompt });
+    const result: GenerateContentResponse = await chatSession.sendMessage({ message: prompt });
     
     return {
         response: result.text,
