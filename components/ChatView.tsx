@@ -4,6 +4,7 @@ import { ChatMessage, Consultant } from '../types';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { MessageInput } from './MessageInput';
 import { BotIcon } from './icons/BotIcon';
+import { MenuIcon } from './icons/MenuIcon';
 
 interface ChatViewProps {
   consultant: Consultant;
@@ -12,9 +13,10 @@ interface ChatViewProps {
   error: string | null;
   onSendMessage: (input: string) => void;
   onRetry: () => void;
+  onToggleSidebar: () => void;
 }
 
-export const ChatView: React.FC<ChatViewProps> = ({ consultant, messages, isLoading, error, onSendMessage, onRetry }) => {
+export const ChatView: React.FC<ChatViewProps> = ({ consultant, messages, isLoading, error, onSendMessage, onRetry, onToggleSidebar }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -27,9 +29,18 @@ export const ChatView: React.FC<ChatViewProps> = ({ consultant, messages, isLoad
 
   return (
     <div className="flex-1 flex flex-col bg-white dark:bg-[#2B2D42]">
-      <header className="p-4 border-b border-[#EDF2F4] dark:border-white/10">
-        <h2 className="text-xl font-semibold">{consultant.name}</h2>
-        <p className="text-sm text-[#8D99AE]">{consultant.description}</p>
+      <header className="p-4 border-b border-[#EDF2F4] dark:border-white/10 flex items-center gap-4">
+        <button 
+          onClick={onToggleSidebar} 
+          className="p-2 rounded-md hover:bg-[#EDF2F4] dark:hover:bg-[#383a51] transition-colors md:hidden"
+          aria-label="Toggle sidebar"
+        >
+          <MenuIcon className="w-6 h-6" />
+        </button>
+        <div>
+            <h2 className="text-xl font-semibold">{consultant.name}</h2>
+            <p className="text-sm text-[#8D99AE]">{consultant.description}</p>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -37,13 +48,26 @@ export const ChatView: React.FC<ChatViewProps> = ({ consultant, messages, isLoad
           <div className="flex flex-col items-center justify-center h-full text-center text-[#8D99AE]">
             <BotIcon className="w-16 h-16 mb-4 opacity-50" />
             <h3 className="text-2xl font-semibold text-[#2B2D42] dark:text-[#EDF2F4]">Ask me anything</h3>
-            <p>I'm the {consultant.name}, ready to help with your business questions.</p>
+            <p className="mb-6">I'm the {consultant.name}, ready to help with your business questions.</p>
+            
+            {consultant.promptSuggestions && (
+              <div className="w-full max-w-md grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {consultant.promptSuggestions.map((prompt, i) => (
+                  <button 
+                    key={i} 
+                    onClick={() => onSendMessage(prompt)}
+                    className="text-left text-sm p-3 bg-[#EDF2F4] dark:bg-[#383a51] rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-[#2B2D42] dark:text-[#EDF2F4]"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
         {messages.map((msg, index) => (
           <ChatMessageBubble key={index} message={msg} />
         ))}
-        {isLoading && <ChatMessageBubble message={{ role: 'model', content: '' }} isLoading={true} />}
          {error && (
             <div className="flex justify-center">
                 <div className="bg-[#EF233C]/10 border border-[#EF233C]/50 text-[#D90429] dark:text-[#EF233C] px-4 py-3 rounded-lg relative max-w-md flex items-center justify-between" role="alert">
