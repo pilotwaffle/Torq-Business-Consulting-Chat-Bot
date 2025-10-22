@@ -14,6 +14,62 @@ interface ChatMessageBubbleProps {
   message: ChatMessage;
 }
 
+const ToolArgsDisplay: React.FC<{ args: any }> = ({ args }) => {
+    if (typeof args !== 'object' || args === null) {
+      return <code>{String(args)}</code>;
+    }
+  
+    return (
+      <div className="text-xs space-y-1.5">
+        {Object.entries(args).map(([key, value]) => (
+          <div key={key} className="grid grid-cols-[auto,1fr] items-start gap-x-2">
+            <span className="font-semibold text-gray-600 dark:text-gray-400 break-keep">{key}:</span>
+            <code className="bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded text-[11px] break-all font-mono">
+              {JSON.stringify(value, null, 2).replace(/"/g, '')}
+            </code>
+          </div>
+        ))}
+      </div>
+    );
+};
+
+const CustomCodeBlock: React.FC<React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>> = ({ children, ...props }) => {
+    const codeElement = React.Children.toArray(children)[0] as React.ReactElement<{className?: string, children: React.ReactNode}> | undefined;
+    
+    if (!codeElement) {
+        return null;
+    }
+
+    const language = codeElement.props.className?.replace('language-', '') || '';
+    const codeContent = codeElement.props.children;
+    
+    const [isCopied, setIsCopied] = useState(false);
+    const handleCopy = () => {
+      if (!codeContent) return;
+      navigator.clipboard.writeText(String(codeContent)).then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      });
+    };
+
+    return (
+        <div className="relative group/pre my-2 bg-gray-100/50 dark:bg-[#212332] rounded-lg border border-black/10 dark:border-white/10">
+          <div className="flex items-center justify-between px-4 py-1.5">
+            <span className="text-xs font-sans text-gray-500 dark:text-gray-400 font-medium">{language || 'code'}</span>
+            <button 
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors opacity-50 group-hover/pre:opacity-100"
+            >
+              {isCopied ? <CheckIcon className="w-3 h-3 text-green-500" /> : <CopyIcon className="w-3 h-3" />}
+              {isCopied ? 'Copied' : 'Copy code'}
+            </button>
+          </div>
+          <pre {...props} className="p-4 pt-0 overflow-x-auto text-sm !bg-transparent !my-0 border-t border-black/10 dark:border-white/10">{children}</pre>
+        </div>
+    );
+}
+  
+
 export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message }) => {
   const { role, content, toolCalls, groundingMetadata, attachments } = message;
   const isUser = role === 'user';
@@ -83,9 +139,9 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message })
                             <SpinnerIcon className="w-4 h-4 animate-spin ml-2" />
                         )}
                     </div>
-                    <pre className="text-xs bg-black/5 dark:bg-black/20 p-2 rounded-md overflow-x-auto">
-                        <code>{JSON.stringify(toolCalls[0].args, null, 2)}</code>
-                    </pre>
+                    <div className="bg-black/5 dark:bg-black/20 p-2 rounded-md">
+                        <ToolArgsDisplay args={toolCalls[0].args} />
+                    </div>
                     </div>
                 </div>
             )}
@@ -94,11 +150,33 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message })
                     <div className="prose prose-sm dark:prose-invert max-w-none 
                                 prose-p:my-0 prose-headings:my-0 prose-ul:my-0 prose-ol:my-0 
                                 prose-a:text-[#D90429] hover:prose-a:underline
-                                prose-code:text-[#D90429] prose-code:before:content-[''] prose-code:after:content-[''] prose-code:font-mono
-                                prose-pre:bg-black/5 dark:prose-pre:bg-black/20 prose-pre:rounded-md prose-pre:p-2 prose-pre:my-2">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                prose-code:font-mono prose-code:before:content-[''] prose-code:after:content-['']">
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                            pre: CustomCodeBlock,
+                            code({ node, inline, className, children, ...props }) {
+                                if (inline) {
+                                    return (
+                                        <code 
+                                            className="bg-[#D90429]/10 text-[#D90429] dark:bg-[#D90429]/20 dark:text-red-400 px-1.5 py-1 rounded-md text-[90%]" 
+                                            {...props}
+                                        >
+                                            {children}
+                                        </code>
+                                    );
+                                }
+                                
+                                return (
+                                    <code className={className} {...props}>
+                                        {children}
+                                    </code>
+                                );
+                            }
+                        }}
+                      >
                         {content}
-                    </ReactMarkdown>
+                      </ReactMarkdown>
                     </div>
                     <button
                         onClick={handleCopy}

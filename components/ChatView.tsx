@@ -1,4 +1,5 @@
-import React, { useRef, useEffect } from 'react';
+
+import React, { useRef, useEffect, useState } from 'react';
 import { ChatMessage, Consultant, Attachment } from '../types';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { MessageInput } from './MessageInput';
@@ -17,6 +18,7 @@ interface ChatViewProps {
 
 export const ChatView: React.FC<ChatViewProps> = ({ consultant, messages, isLoading, error, onSendMessage, onRetry, onToggleSidebar }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [liveRegionMessage, setLiveRegionMessage] = useState('');
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -25,9 +27,37 @@ export const ChatView: React.FC<ChatViewProps> = ({ consultant, messages, isLoad
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+  
+  useEffect(() => {
+    if (isLoading) {
+      setLiveRegionMessage(`${consultant.name} is typing...`);
+    } else if (error) {
+      setLiveRegionMessage(`Error: ${error}`);
+    } else {
+      // Clear message after a short delay to allow screen readers to announce completion if needed
+      const timer = setTimeout(() => setLiveRegionMessage(''), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, error, consultant.name]);
 
   return (
     <div className="flex-1 flex flex-col bg-white dark:bg-[#2B2D42]">
+       <div 
+        aria-live="polite" 
+        style={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          padding: 0,
+          margin: '-1px',
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          borderWidth: 0,
+        }}
+      >
+        {liveRegionMessage}
+      </div>
       <header className="p-4 border-b border-[#EDF2F4] dark:border-white/10 flex items-center gap-4">
         <button 
           onClick={onToggleSidebar} 

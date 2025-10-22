@@ -45,6 +45,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [renameValue, setRenameValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const menuContainerRef = useRef<HTMLDivElement>(null);
+  const menuTriggerRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
   const consultantConversations = chatHistory.get(selectedConsultantId) || [];
 
@@ -53,17 +55,68 @@ export const Sidebar: React.FC<SidebarProps> = ({
       renameInputRef.current.focus();
     }
   }, [renamingId]);
+  
+  const closeMenuAndRestoreFocus = () => {
+    if (menuOpenId) {
+      const triggerButton = menuTriggerRefs.current.get(menuOpenId);
+      // FIX: Cast to HTMLElement to address a potential type inference issue where triggerButton is treated as 'unknown'.
+      (triggerButton as HTMLElement)?.focus();
+      setMenuOpenId(null);
+    }
+  };
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
-      if (menuOpenId && !(event.target as HTMLElement).closest('.menu-container')) {
-        setMenuOpenId(null);
+      if (menuOpenId && menuContainerRef.current && !menuContainerRef.current.contains(event.target as Node)) {
+        closeMenuAndRestoreFocus();
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
     };
+  }, [menuOpenId]);
+  
+  useEffect(() => {
+    if (menuOpenId && menuContainerRef.current) {
+      const menu = menuContainerRef.current;
+      const focusableElements = Array.from(menu.querySelectorAll<HTMLElement>('button'));
+      
+      if (focusableElements.length > 0) {
+        focusableElements[0].focus();
+      }
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          closeMenuAndRestoreFocus();
+          return;
+        }
+
+        if (e.key === 'Tab' && focusableElements.length > 1) {
+          const firstElement = focusableElements[0];
+          const lastElement = focusableElements[focusableElements.length - 1];
+
+          if (e.shiftKey) {
+            if (document.activeElement === firstElement) {
+              e.preventDefault();
+              // FIX: Cast to HTMLElement to address a potential type inference issue.
+              (lastElement as HTMLElement).focus();
+            }
+          } else {
+            if (document.activeElement === lastElement) {
+              e.preventDefault();
+              // FIX: Cast to HTMLElement to address a potential type inference issue.
+              (firstElement as HTMLElement).focus();
+            }
+          }
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
   }, [menuOpenId]);
 
 
@@ -98,7 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const handleRename = (conversation: Conversation) => {
     setRenamingId(conversation.id);
     setRenameValue(getConversationTitle(conversation));
-    setMenuOpenId(null);
+    setMenuOpenId(null); // Close menu when rename starts
   };
   
   const handleConfirmRename = () => {
@@ -202,15 +255,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     )}
                     {renamingId !== conversation.id && (
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity menu-container">
-                        <button onClick={() => setMenuOpenId(menuOpenId === conversation.id ? null : conversation.id)} className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10">
+                        <button 
+                            ref={el => {
+                                if (el) menuTriggerRefs.current.set(conversation.id, el);
+                                else menuTriggerRefs.current.delete(conversation.id);
+                            }}
+                            onClick={() => setMenuOpenId(menuOpenId === conversation.id ? null : conversation.id)} 
+                            className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
+                            aria-haspopup="true"
+                            aria-expanded={menuOpenId === conversation.id}
+                            aria-label={`Conversation options for ${getConversationTitle(conversation)}`}
+                        >
                             <EllipsisHorizontalIcon className="w-5 h-5"/>
                         </button>
                         {menuOpenId === conversation.id && (
-                            <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-[#2B2D42] rounded-lg shadow-lg border border-black/10 dark:border-white/10 z-10">
-                                <button onClick={() => handleRename(conversation)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-black/5 dark:hover:bg-white/10">
+                            <div 
+                                ref={menuContainerRef}
+                                className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-[#2B2D42] rounded-lg shadow-lg border border-black/10 dark:border-white/10 z-10"
+                                role="menu"
+                            >
+                                <button onClick={() => handleRename(conversation)} role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-black/5 dark:hover:bg-white/10">
                                     <PencilIcon className="w-4 h-4"/> Rename
                                 </button>
-                                <button onClick={() => onDeleteConversation(selectedConsultantId, conversation.id)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-red-600 dark:text-red-500 hover:bg-black/5 dark:hover:bg-white/10">
+                                <button onClick={() => onDeleteConversation(selectedConsultantId, conversation.id)} role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-red-600 dark:text-red-500 hover:bg-black/5 dark:hover:bg-white/10">
                                     <TrashIcon className="w-4 h-4"/> Delete
                                 </button>
                             </div>
