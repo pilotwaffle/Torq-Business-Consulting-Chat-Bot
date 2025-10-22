@@ -122,7 +122,8 @@ const App: React.FC = () => {
   };
   
   const handleDeleteConversation = (consultantId: string, conversationId: string) => {
-    setChatHistory(prevHistory => {
+    // FIX: Explicitly typing `prevHistory` resolves type inference issues within the updater function.
+    setChatHistory((prevHistory: Map<string, Conversation[]>) => {
         const newHistory = new Map(prevHistory);
         const consultantConvos = newHistory.get(consultantId) || [];
         const updatedConvos = consultantConvos.filter(c => c.id !== conversationId);
@@ -142,7 +143,8 @@ const App: React.FC = () => {
   };
   
   const handleRenameConversation = (consultantId: string, conversationId: string, newTitle: string) => {
-    setChatHistory(prevHistory => {
+    // FIX: Explicitly typing `prevHistory` resolves type inference issues within the updater function.
+    setChatHistory((prevHistory: Map<string, Conversation[]>) => {
         const newHistory = new Map(prevHistory);
         const consultantConvos = newHistory.get(consultantId) || [];
         const updatedConvos = consultantConvos.map(convo =>
@@ -154,7 +156,8 @@ const App: React.FC = () => {
   };
 
   const upsertConversation = useCallback((finalMessages: ChatMessage[]) => {
-    setChatHistory(prevHistory => {
+    // FIX: Explicitly typing `prevHistory` resolves type inference issues within the updater function.
+    setChatHistory((prevHistory: Map<string, Conversation[]>) => {
         const newHistory = new Map(prevHistory);
         const consultantConvos = newHistory.get(selectedConsultantId) || [];
         let conversationId = activeConversationId;

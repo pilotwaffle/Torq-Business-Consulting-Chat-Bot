@@ -9,6 +9,7 @@ import { CopyIcon } from './icons/CopyIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { CodeBracketIcon } from './icons/CodeBracketIcon';
 import { LinkIcon } from './icons/LinkIcon';
+import { SpinnerIcon } from './icons/SpinnerIcon';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
@@ -62,6 +63,9 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message })
                     <div className="flex items-center gap-2 text-sm font-semibold mb-2 text-[#8D99AE]">
                         <CodeBracketIcon className="w-5 h-5" />
                         <span>Using Tool: <strong>{toolCalls[0].name}</strong></span>
+                        {!hasContent && (
+                            <SpinnerIcon className="w-4 h-4 animate-spin ml-2" />
+                        )}
                     </div>
                     <pre className="text-xs bg-black/5 dark:bg-black/20 p-2 rounded-md overflow-x-auto">
                         <code>{JSON.stringify(toolCalls[0].args, null, 2)}</code>
@@ -112,11 +116,11 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message })
                 </div>
             )}
              {!hasContent && !hasToolCalls && (
-              <div className="px-4 py-3">
-                <div className="animate-pulse flex space-x-2">
-                  <div className="rounded-full bg-gray-300 dark:bg-gray-600 h-2 w-2"></div>
-                  <div className="rounded-full bg-gray-300 dark:bg-gray-600 h-2 w-2"></div>
-                  <div className="rounded-full bg-gray-300 dark:bg-gray-600 h-2 w-2"></div>
+              <div className="px-4 py-3 w-48">
+                <div className="animate-pulse space-y-2.5">
+                  <div className="h-2.5 bg-gray-300 dark:bg-gray-600 rounded-full w-full"></div>
+                  <div className="h-2.5 bg-gray-300 dark:bg-gray-600 rounded-full w-11/12"></div>
+                  <div className="h-2.5 bg-gray-300 dark:bg-gray-600 rounded-full w-4/5"></div>
                 </div>
               </div>
             )}
