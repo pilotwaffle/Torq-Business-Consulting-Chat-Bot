@@ -1,0 +1,5 @@
+{
+  "name": "Multi-LLM Business Consulting Chatbot",
+  "description": "An advanced chatbot that leverages multiple specialized AI consultants, powered by Google's Gemini models, to provide expert advice on a range of business topics. Users can switch between different AI personas for tailored insights.",
+  "requestFramePermissions": []
+}
