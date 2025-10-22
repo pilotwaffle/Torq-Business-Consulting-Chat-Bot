@@ -1,6 +1,6 @@
 // Fix: Removed non-existent 'FunctionCallPart' and imported 'Content' for use in history.
 import { GoogleGenAI, Chat, Part, Content } from "@google/genai";
-import { Consultant, ChatMessage, ToolCallResponse } from '../types';
+import { Consultant, ChatMessage, ToolCallResponse, Attachment } from '../types';
 import * as toolService from './toolService';
 
 let ai: GoogleGenAI | null = null;
@@ -41,9 +41,25 @@ function convertToGeminiHistory(history: ChatMessage[]): Content[] {
             };
         }
         if (msg.role === 'model' || msg.role === 'user') {
+            const parts: Part[] = [];
+            if (msg.content) {
+                parts.push({ text: msg.content });
+            }
+            if (msg.attachments) {
+                msg.attachments.forEach(att => {
+                    parts.push({
+                        inlineData: {
+                            mimeType: att.mimeType,
+                            data: att.data
+                        }
+                    });
+                });
+            }
+            if (parts.length === 0) return [];
+            
             return {
                 role: msg.role,
-                parts: [{ text: msg.content || '' }]
+                parts: parts
             };
         }
         return [];
@@ -54,7 +70,8 @@ export const getChatResponseStream = (
     consultant: Consultant,
     session: Chat | undefined,
     prompt: string,
-    history: ChatMessage[]
+    history: ChatMessage[],
+    attachments: Attachment[] | undefined
 ) => {
     let finalSession: Chat;
 
@@ -77,8 +94,23 @@ export const getChatResponseStream = (
             });
         }
         finalSession = chatSession;
+        
+        const promptParts: Part[] = [];
+        if (prompt) {
+            promptParts.push({ text: prompt });
+        }
+        if (attachments) {
+            for (const att of attachments) {
+                promptParts.push({
+                    inlineData: {
+                        mimeType: att.mimeType,
+                        data: att.data,
+                    }
+                });
+            }
+        }
 
-        let stream = await chatSession.sendMessageStream({ message: prompt });
+        let stream = await chatSession.sendMessageStream({ message: promptParts });
         
         let toolResponses: ToolCallResponse[] = [];
 

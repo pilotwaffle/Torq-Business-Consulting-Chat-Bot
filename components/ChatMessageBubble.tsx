@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -16,7 +15,7 @@ interface ChatMessageBubbleProps {
 }
 
 export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message }) => {
-  const { role, content, toolCalls, groundingMetadata } = message;
+  const { role, content, toolCalls, groundingMetadata, attachments } = message;
   const isUser = role === 'user';
   const [isCopied, setIsCopied] = useState(false);
 
@@ -54,7 +53,24 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message })
         }`}
       >
         {isUser ? (
-          <p className="px-4 py-3 whitespace-pre-wrap">{content}</p>
+            <div className="px-4 py-3">
+                {attachments && attachments.map((att, index) => (
+                    <div key={index} className="mb-2 last:mb-0">
+                        {att.mimeType.startsWith('image/') ? (
+                        <img 
+                            src={`data:${att.mimeType};base64,${att.data}`} 
+                            alt={att.name}
+                            className="rounded-lg max-w-xs max-h-64 object-contain border border-white/20"
+                        />
+                        ) : (
+                        <div className="p-2 rounded-md bg-black/20 text-xs flex items-center gap-2">
+                            <span>{att.name}</span>
+                        </div>
+                        )}
+                    </div>
+                ))}
+                {content && <p className="whitespace-pre-wrap">{content}</p>}
+            </div>
         ) : (
           <>
             {hasToolCalls && (

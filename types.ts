@@ -17,9 +17,16 @@ export interface GroundingMetadata {
   }
 }
 
+export interface Attachment {
+    name: string;
+    mimeType: string;
+    data: string; // base64 string
+}
+
 export interface ChatMessage {
   role: 'user' | 'model' | 'tool';
   content?: string;
+  attachments?: Attachment[];
   toolCalls?: ToolCall[];
   toolCallResponses?: ToolCallResponse[];
   groundingMetadata?: GroundingMetadata[];

@@ -1,12 +1,35 @@
-
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatView } from './components/ChatView';
 import { getChatResponseStream } from './services/geminiService';
 import { saveChatHistory, loadChatHistory } from './services/storageService';
-import { ChatMessage, ChatSessions, Conversation } from './types';
+import { ChatMessage, ChatSessions, Conversation, Attachment } from './types';
 import { CONSULTANTS } from './constants';
+
+const generateErrorMessage = (e: any, context: 'send' | 'retry'): string => {
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const baseMessage = context === 'send' 
+        ? 'Sorry, your message could not be sent.' 
+        : 'Sorry, the attempt to retry failed.';
+    
+    let details: string;
+
+    if (!navigator.onLine) {
+        details = 'Network issue: You seem to be offline. Please check your connection.';
+    } else if (e instanceof Error) {
+        if (e.message.toLowerCase().includes('api_key')) {
+            details = 'API Error: There may be an issue with the service configuration.';
+        } else if (e.message.toLowerCase().includes('fetch') || e.message.toLowerCase().includes('network')) {
+            details = 'Network Error: Could not connect to the server.';
+        } else {
+            details = 'An unexpected error occurred.';
+        }
+    } else {
+        details = 'An unknown error occurred.';
+    }
+    
+    return `${baseMessage} ${details} (at ${timestamp})`;
+};
 
 const App: React.FC = () => {
   const [selectedConsultantId, setSelectedConsultantId] = useState<string>(CONSULTANTS[0].id);
@@ -14,7 +37,7 @@ const App: React.FC = () => {
   const [chatSessions, setChatSessions] = useState<ChatSessions>(new Map());
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [failedMessage, setFailedMessage] = useState<{ content: string; history: ChatMessage[] } | null>(null);
+  const [failedMessage, setFailedMessage] = useState<{ content: string; attachments?: Attachment[]; history: ChatMessage[] } | null>(null);
 
   const [chatHistory, setChatHistory] = useState<Map<string, Conversation[]>>(new Map());
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -214,14 +237,18 @@ const App: React.FC = () => {
     return finalMessages;
   }, []);
 
-  const handleSendMessage = useCallback(async (userInput: string) => {
-    if (!userInput.trim()) return;
+  const handleSendMessage = useCallback(async (userInput: string, attachment: Attachment | null) => {
+    if (!userInput.trim() && !attachment) return;
     
     closeSidebarOnMobile();
     setError(null);
     setFailedMessage(null);
 
-    const userMessage: ChatMessage = { role: 'user', content: userInput };
+    const userMessage: ChatMessage = { 
+        role: 'user', 
+        content: userInput,
+        ...(attachment && { attachments: [attachment] })
+    };
     const currentMessagesForHistory = messages;
     setMessages(prev => [...prev, userMessage, { role: 'model', content: '' }]);
     setIsLoading(true);
@@ -234,7 +261,8 @@ const App: React.FC = () => {
             selectedConsultant,
             chatSessions.get(selectedConsultantId),
             userInput,
-            currentMessagesForHistory
+            currentMessagesForHistory,
+            attachment ? [attachment] : undefined
         );
 
         const finalMessages = await processStream(streamGenerator.stream);
@@ -246,8 +274,8 @@ const App: React.FC = () => {
 
     } catch (e: any) {
         console.error("Error fetching chat response:", e);
-        setError("Sorry, something went wrong. Please try again.");
-        setFailedMessage({ content: userInput, history: currentMessagesForHistory });
+        setError(generateErrorMessage(e, 'send'));
+        setFailedMessage({ content: userInput, attachments: attachment ? [attachment] : undefined, history: currentMessagesForHistory });
         setMessages(currentMessagesForHistory);
     } finally {
         setIsLoading(false);
@@ -259,11 +287,11 @@ const App: React.FC = () => {
     if (!failedMessage) return;
 
     closeSidebarOnMobile();
-    const { content: messageToRetry, history: historyForRetry } = failedMessage;
+    const { content: messageToRetry, attachments: attachmentsForRetry, history: historyForRetry } = failedMessage;
     
     setError(null);
     setFailedMessage(null);
-    const userMessage: ChatMessage = { role: 'user', content: messageToRetry };
+    const userMessage: ChatMessage = { role: 'user', content: messageToRetry, attachments: attachmentsForRetry };
     setMessages([...historyForRetry, userMessage, { role: 'model', content: '' }]);
     setIsLoading(true);
     
@@ -279,7 +307,8 @@ const App: React.FC = () => {
             selectedConsultant,
             undefined, 
             messageToRetry,
-            historyForRetry
+            historyForRetry,
+            attachmentsForRetry
         );
 
         const finalMessages = await processStream(streamGenerator.stream);
@@ -291,8 +320,8 @@ const App: React.FC = () => {
 
     } catch (e: any) {
         console.error("Error retrying chat response:", e);
-        setError("Sorry, the attempt to retry failed. Please try again.");
-        setFailedMessage({ content: messageToRetry, history: historyForRetry });
+        setError(generateErrorMessage(e, 'retry'));
+        setFailedMessage({ content: messageToRetry, attachments: attachmentsForRetry, history: historyForRetry });
         setMessages([...historyForRetry, userMessage]);
     } finally {
         setIsLoading(false);

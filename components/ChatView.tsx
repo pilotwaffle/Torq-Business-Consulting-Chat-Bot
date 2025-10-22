@@ -1,6 +1,5 @@
-
 import React, { useRef, useEffect } from 'react';
-import { ChatMessage, Consultant } from '../types';
+import { ChatMessage, Consultant, Attachment } from '../types';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { MessageInput } from './MessageInput';
 import { BotIcon } from './icons/BotIcon';
@@ -11,7 +10,7 @@ interface ChatViewProps {
   messages: ChatMessage[];
   isLoading: boolean;
   error: string | null;
-  onSendMessage: (input: string) => void;
+  onSendMessage: (input: string, attachment: Attachment | null) => void;
   onRetry: () => void;
   onToggleSidebar: () => void;
 }
@@ -55,7 +54,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ consultant, messages, isLoad
                 {consultant.promptSuggestions.map((prompt, i) => (
                   <button 
                     key={i} 
-                    onClick={() => onSendMessage(prompt)}
+                    onClick={() => onSendMessage(prompt, null)}
                     className="text-left text-sm p-3 bg-[#EDF2F4] dark:bg-[#383a51] rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-[#2B2D42] dark:text-[#EDF2F4]"
                   >
                     {prompt}
