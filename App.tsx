@@ -16,6 +16,30 @@ const App: React.FC = () => {
 
   const [chatHistory, setChatHistory] = useState<Map<string, Conversation[]>>(new Map());
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else if (prefersDark) {
+      setTheme('dark');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
+  };
 
   useEffect(() => {
     setChatHistory(loadChatHistory());
@@ -207,6 +231,8 @@ const App: React.FC = () => {
         chatHistory={chatHistory}
         activeConversationId={activeConversationId}
         onSelectConversation={handleSelectConversation}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
       <main className="flex-1 flex flex-col h-screen">
         <ChatView
