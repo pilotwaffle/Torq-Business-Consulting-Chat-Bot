@@ -7,6 +7,7 @@ import { MoonIcon } from './icons/MoonIcon';
 import { EllipsisHorizontalIcon } from './icons/EllipsisHorizontalIcon';
 import { PencilIcon } from './icons/PencilIcon';
 import { TrashIcon } from './icons/TrashIcon';
+import { SearchIcon } from './icons/SearchIcon';
 
 interface SidebarProps {
   consultants: Consultant[];
@@ -42,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   const consultantConversations = chatHistory.get(selectedConsultantId) || [];
@@ -76,6 +78,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const content = firstUserMessage?.content || conversation.messages[0].content;
     return `${content.substring(0, 35)}${content.length > 35 ? "..." : ""}`;
   };
+
+  const filteredConversations = consultantConversations.filter(conversation => {
+    if (!searchQuery.trim()) {
+      return true;
+    }
+    const lowerCaseQuery = searchQuery.toLowerCase();
+    
+    const title = getConversationTitle(conversation).toLowerCase();
+    if (title.includes(lowerCaseQuery)) {
+      return true;
+    }
+    
+    return conversation.messages.some(message => 
+      message.content?.toLowerCase().includes(lowerCaseQuery)
+    );
+  }).sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
 
   const handleRename = (conversation: Conversation) => {
     setRenamingId(conversation.id);
@@ -141,9 +159,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           {consultantConversations.length > 0 && (
             <div>
+              <div className="px-2 mb-2">
+                <div className="relative">
+                    <input
+                        type="text"
+                        placeholder="Search history..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-[#EDF2F4] dark:bg-[#2B2D42] text-[#2B2D42] dark:text-[#EDF2F4] border border-transparent focus:ring-2 focus:ring-[#D90429] outline-none transition-colors"
+                        aria-label="Search chat history"
+                    />
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8D99AE]">
+                        <SearchIcon className="w-4 h-4" />
+                    </div>
+                </div>
+              </div>
               <h3 className="px-2 text-xs font-semibold uppercase text-[#8D99AE] tracking-wider mb-2">History</h3>
               <ul className="space-y-1">
-                {consultantConversations.sort((a, b) => Number(b.timestamp) - Number(a.timestamp)).map((conversation) => (
+                {filteredConversations.map((conversation) => (
                   <li key={conversation.id} className="relative group">
                     {renamingId === conversation.id ? (
                       <input
