@@ -5,6 +5,7 @@ import { getChatResponseStream, generateTitleForConversation } from './services/
 import { saveChatHistory, loadChatHistory } from './services/storageService';
 import { ChatMessage, ChatSessions, Conversation, Attachment } from './types';
 import { CONSULTANTS } from './constants';
+import { LiveConversationModal } from './components/LiveConversationModal';
 
 const generateErrorMessage = (e: any, context: 'send' | 'retry'): string => {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -45,6 +46,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
   
   const [titlingInProgress, setTitlingInProgress] = useState<Set<string>>(new Set());
+  const [isLiveSessionActive, setIsLiveSessionActive] = useState(false);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -407,11 +409,39 @@ const App: React.FC = () => {
         setIsLoading(false);
     }
   }, [failedMessage, selectedConsultantId, chatSessions, upsertConversation, processStream]);
+  
+  const handleEndLiveSession = useCallback((transcript: Array<{ speaker: 'user' | 'model'; text: string }>) => {
+    setIsLiveSessionActive(false);
+    if (transcript.length === 0) return;
+
+    const formattedTranscript = transcript
+        .map(t => `**${t.speaker === 'user' ? 'You' : 'Advisor'}:** ${t.text}`)
+        .join('\n\n');
+
+    const userMessage: ChatMessage = {
+        role: 'user',
+        content: `Live voice session started.`,
+    };
+    const modelMessage: ChatMessage = {
+        role: 'model',
+        content: `### Live Session Transcript\n\n---\n\n${formattedTranscript}`,
+    };
+
+    const finalMessages = [...messages, userMessage, modelMessage];
+    setMessages(finalMessages);
+    upsertConversation(finalMessages);
+  }, [messages, upsertConversation]);
 
   const selectedConsultant = CONSULTANTS.find(c => c.id === selectedConsultantId) || CONSULTANTS[0];
 
   return (
     <div className="flex h-screen font-sans text-[#2B2D42] dark:text-[#EDF2F4] relative overflow-hidden">
+      {isLiveSessionActive && selectedConsultant.id === 'strategic-advisor' && (
+        <LiveConversationModal
+          consultant={selectedConsultant}
+          onClose={handleEndLiveSession}
+        />
+      )}
       {isSidebarOpen && (
         <div 
             onClick={handleToggleSidebar} 
@@ -443,6 +473,7 @@ const App: React.FC = () => {
           onSendMessage={handleSendMessage}
           onRetry={handleRetry}
           onToggleSidebar={handleToggleSidebar}
+          onStartLiveSession={() => setIsLiveSessionActive(true)}
         />
       </main>
     </div>

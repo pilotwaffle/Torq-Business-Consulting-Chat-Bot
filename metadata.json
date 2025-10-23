@@ -1,5 +1,7 @@
 {
   "name": "TORQ AI",
   "description": "TORQ AI provides expert business advice through specialized AI personas powered by Google Gemini. Switch between consultants for tailored insights on strategy, marketing, finance, and operations.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }
