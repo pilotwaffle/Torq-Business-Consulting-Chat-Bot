@@ -1,4 +1,5 @@
 
+
 import React, { useRef, useEffect, useState } from 'react';
 import { ChatMessage, Consultant, Attachment } from '../types';
 import { ChatMessageBubble } from './ChatMessageBubble';
@@ -41,7 +42,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ consultant, messages, isLoad
   }, [isLoading, error, consultant.name]);
 
   return (
-    <div className="flex-1 flex flex-col bg-white dark:bg-[#2B2D42]">
+    <div className="flex-1 grid grid-rows-[auto,1fr,auto] bg-white dark:bg-[#2B2D42] overflow-hidden">
        <div 
         aria-live="polite" 
         style={{
@@ -72,7 +73,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ consultant, messages, isLoad
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="overflow-y-auto p-6 space-y-6">
         {messages.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center h-full text-center text-[#8D99AE]">
             <BotIcon className="w-16 h-16 mb-4 opacity-50" />

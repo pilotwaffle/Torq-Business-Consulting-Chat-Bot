@@ -254,7 +254,11 @@ const App: React.FC = () => {
     });
   }, [selectedConsultantId, activeConversationId]);
 
-  // Effect for AI-powered conversation titling
+  // Implements AI-powered conversation titling.
+  // This effect triggers after a message is successfully received and the chat is idle.
+  // It checks if the active conversation has at least two messages, does not already have a title,
+  // and is not currently being processed for a title. If these conditions are met, it makes an
+  // asynchronous call to the Gemini API to generate a concise title and updates the conversation state.
   useEffect(() => {
     // Guard against running when loading, no active conversation, or already processed for titling.
     if (isLoading || !activeConversationId || titlingInProgress.has(activeConversationId)) {
