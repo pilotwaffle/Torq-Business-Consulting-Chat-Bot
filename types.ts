@@ -20,7 +20,8 @@ export interface GroundingMetadata {
 export interface Attachment {
     name: string;
     mimeType: string;
-    data: string; // base64 string
+    data: string; // base64 for images, text content for text files
+    source: 'base64' | 'text';
 }
 
 export interface ChatMessage {

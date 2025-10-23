@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatView } from './components/ChatView';
-import { getChatResponseStream } from './services/geminiService';
+import { getChatResponseStream, generateTitleForConversation } from './services/geminiService';
 import { saveChatHistory, loadChatHistory } from './services/storageService';
 import { ChatMessage, ChatSessions, Conversation, Attachment } from './types';
 import { CONSULTANTS } from './constants';
@@ -43,6 +43,8 @@ const App: React.FC = () => {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
+  
+  const [titlingInProgress, setTitlingInProgress] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -165,21 +167,65 @@ const App: React.FC = () => {
     });
   };
   
-  const handleRenameConversation = (consultantId: string, conversationId: string, newTitle: string) => {
+  const handleRenameConversation = useCallback((consultantId: string, conversationId: string, newTitle: string) => {
     // FIX: Explicitly typing `prevHistory` resolves type inference issues within the updater function.
     setChatHistory((prevHistory: Map<string, Conversation[]>) => {
         const newHistory = new Map(prevHistory);
         const consultantConvos = newHistory.get(consultantId) || [];
+        // Prevent title overwriting if it's already being titled by AI
+        const currentConvo = consultantConvos.find(c => c.id === conversationId);
+        if(!currentConvo) return prevHistory;
+
         const updatedConvos = consultantConvos.map(convo =>
             convo.id === conversationId ? { ...convo, title: newTitle } : convo
         );
         newHistory.set(consultantId, updatedConvos);
         return newHistory;
     });
+  }, []);
+
+  const handleExportConversation = (consultantId: string, conversationId: string) => {
+    const consultant = CONSULTANTS.find(c => c.id === consultantId);
+    const conversation = chatHistory.get(consultantId)?.find(c => c.id === conversationId);
+    if (!consultant || !conversation) return;
+
+    let markdownContent = `# Conversation with ${consultant.name}\n\n**ID:** \`${conversation.id}\`\n**Timestamp:** \`${new Date(conversation.timestamp).toLocaleString()}\`\n\n---\n\n`;
+
+    conversation.messages.forEach(msg => {
+        if (msg.role === 'tool') return;
+        
+        const author = msg.role === 'user' ? 'User' : consultant.name;
+        markdownContent += `### **${author}**\n`;
+        if (msg.content) {
+            markdownContent += `${msg.content.replace(/\n/g, '\n\n')}\n\n`;
+        }
+        if (msg.attachments) {
+            msg.attachments.forEach(att => {
+                 markdownContent += `*Attachment: \`${att.name}\`*\n\n`;
+            });
+        }
+        if (msg.toolCalls) {
+            msg.toolCalls.forEach(tc => {
+                 markdownContent += `*Executing Tool: \`${tc.name}\` with arguments \`${JSON.stringify(tc.args)}\`*\n\n`;
+            });
+        }
+        markdownContent += `---\n\n`;
+    });
+
+    const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const title = conversation.title || `conversation-${conversation.id}`;
+    const safeFilename = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    a.href = url;
+    a.download = `${safeFilename}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const upsertConversation = useCallback((finalMessages: ChatMessage[]) => {
-    // FIX: Explicitly typing `prevHistory` resolves type inference issues within the updater function.
     setChatHistory((prevHistory: Map<string, Conversation[]>) => {
         const newHistory = new Map(prevHistory);
         const consultantConvos = newHistory.get(selectedConsultantId) || [];
@@ -200,12 +246,42 @@ const App: React.FC = () => {
                 messages: finalMessages,
             };
             updatedConvos = [...consultantConvos, newConversation];
+            // This is async, so we use the new ID directly for subsequent operations
             setActiveConversationId(conversationId);
         }
         newHistory.set(selectedConsultantId, updatedConvos);
         return newHistory;
     });
   }, [selectedConsultantId, activeConversationId]);
+
+  // Effect for AI-powered conversation titling
+  useEffect(() => {
+    // Guard against running when loading, no active conversation, or already processed for titling.
+    if (isLoading || !activeConversationId || titlingInProgress.has(activeConversationId)) {
+        return;
+    }
+
+    const consultantConvos = chatHistory.get(selectedConsultantId);
+    const activeConvo = consultantConvos?.find(c => c.id === activeConversationId);
+
+    // Conditions for titling: conversation exists, has no title yet, and has at least two messages.
+    if (activeConvo && !activeConvo.title && activeConvo.messages.length >= 2) {
+        // Mark this conversation as being processed to prevent duplicate requests.
+        setTitlingInProgress(prev => new Set(prev).add(activeConversationId));
+        
+        generateTitleForConversation(activeConvo.messages)
+            .then(newTitle => {
+                if (newTitle) {
+                    handleRenameConversation(selectedConsultantId, activeConvo.id, newTitle);
+                }
+            })
+            .catch(err => {
+                console.error("Title generation failed:", err);
+                // Optional: If you want to allow retries on failure, remove from the set here.
+            });
+    }
+  }, [isLoading, activeConversationId, chatHistory, selectedConsultantId, titlingInProgress, handleRenameConversation]);
+
 
   const processStream = useCallback(async (streamGenerator: AsyncGenerator<Partial<ChatMessage>, any, undefined>) => {
     let finalMessages: ChatMessage[] = [];
@@ -352,8 +428,9 @@ const App: React.FC = () => {
         isSidebarOpen={isSidebarOpen}
         onDeleteConversation={handleDeleteConversation}
         onRenameConversation={handleRenameConversation}
+        onExportConversation={handleExportConversation}
       />
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 min-h-0">
         <ChatView
           consultant={selectedConsultant}
           messages={messages}

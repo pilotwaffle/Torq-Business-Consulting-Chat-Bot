@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Consultant, Conversation } from '../types';
 import { PlusIcon } from './icons/PlusIcon';
@@ -8,6 +9,7 @@ import { EllipsisHorizontalIcon } from './icons/EllipsisHorizontalIcon';
 import { PencilIcon } from './icons/PencilIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { SearchIcon } from './icons/SearchIcon';
+import { ExportIcon } from './icons/ExportIcon';
 
 interface SidebarProps {
   consultants: Consultant[];
@@ -22,6 +24,7 @@ interface SidebarProps {
   isSidebarOpen: boolean;
   onDeleteConversation: (consultantId: string, conversationId: string) => void;
   onRenameConversation: (consultantId: string, conversationId: string, newTitle: string) => void;
+  onExportConversation: (consultantId: string, conversationId: string) => void;
 }
 
 const logoBase64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiMyQjJENDIiLz4KPHBhdGggZD0iTTEyIDEyTDIwIDIwTDI4IDEyIiBzdHJva2U9IiNFRjIzM0MiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CjxwYXRoIGQ9Ik0xMiAyMEwyMCAyOEwyOCAyMCIgc3Ryb2tlPSIjRURGMkY0IiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K';
@@ -39,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isSidebarOpen,
   onDeleteConversation,
   onRenameConversation,
+  onExportConversation,
 }) => {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -59,8 +63,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const closeMenuAndRestoreFocus = () => {
     if (menuOpenId) {
       const triggerButton = menuTriggerRefs.current.get(menuOpenId);
-      // FIX: Cast to HTMLElement to address a potential type inference issue where triggerButton is treated as 'unknown'.
-      (triggerButton as HTMLElement)?.focus();
+      // FIX: Use a type guard to ensure triggerButton exists before calling focus.
+      if (triggerButton) {
+        triggerButton.focus();
+      }
       setMenuOpenId(null);
     }
   };
@@ -82,8 +88,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       const menu = menuContainerRef.current;
       const focusableElements = Array.from(menu.querySelectorAll<HTMLElement>('button'));
       
-      if (focusableElements.length > 0) {
-        focusableElements[0].focus();
+      // FIX: Check for element existence before calling focus.
+      const firstElement = focusableElements[0];
+      // FIX: Use `instanceof HTMLElement` as a type guard to ensure `focus` method exists and prevent runtime errors.
+      if (firstElement instanceof HTMLElement) {
+        firstElement.focus();
       }
 
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -99,14 +108,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
           if (e.shiftKey) {
             if (document.activeElement === firstElement) {
               e.preventDefault();
-              // FIX: Cast to HTMLElement to address a potential type inference issue.
-              (lastElement as HTMLElement).focus();
+              // FIX: Ensure lastElement exists before calling focus.
+              // FIX: Use `instanceof HTMLElement` as a type guard to ensure `focus` method exists and prevent runtime errors.
+              if (lastElement instanceof HTMLElement) {
+                lastElement.focus();
+              }
             }
           } else {
             if (document.activeElement === lastElement) {
               e.preventDefault();
-              // FIX: Cast to HTMLElement to address a potential type inference issue.
-              (firstElement as HTMLElement).focus();
+              // FIX: Ensure firstElement exists before calling focus.
+              // FIX: Use `instanceof HTMLElement` as a type guard to ensure `focus` method exists and prevent runtime errors.
+              if (firstElement instanceof HTMLElement) {
+                firstElement.focus();
+              }
             }
           }
         }
@@ -271,11 +286,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         {menuOpenId === conversation.id && (
                             <div 
                                 ref={menuContainerRef}
-                                className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-[#2B2D42] rounded-lg shadow-lg border border-black/10 dark:border-white/10 z-10"
+                                className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-[#2B2D42] rounded-lg shadow-lg border border-black/10 dark:border-white/10 z-10"
                                 role="menu"
                             >
                                 <button onClick={() => handleRename(conversation)} role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-black/5 dark:hover:bg-white/10">
                                     <PencilIcon className="w-4 h-4"/> Rename
+                                </button>
+                                <button onClick={() => onExportConversation(selectedConsultantId, conversation.id)} role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-black/5 dark:hover:bg-white/10">
+                                    <ExportIcon className="w-4 h-4"/> Export
                                 </button>
                                 <button onClick={() => onDeleteConversation(selectedConsultantId, conversation.id)} role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-red-600 dark:text-red-500 hover:bg-black/5 dark:hover:bg-white/10">
                                     <TrashIcon className="w-4 h-4"/> Delete

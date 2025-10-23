@@ -47,12 +47,15 @@ function convertToGeminiHistory(history: ChatMessage[]): Content[] {
             }
             if (msg.attachments) {
                 msg.attachments.forEach(att => {
-                    parts.push({
-                        inlineData: {
-                            mimeType: att.mimeType,
-                            data: att.data
-                        }
-                    });
+                    // Only include attachments with base64 source in history for multimodality
+                    if (att.source === 'base64') {
+                        parts.push({
+                            inlineData: {
+                                mimeType: att.mimeType,
+                                data: att.data
+                            }
+                        });
+                    }
                 });
             }
             if (parts.length === 0) return [];
@@ -96,19 +99,29 @@ export const getChatResponseStream = (
         finalSession = chatSession;
         
         const promptParts: Part[] = [];
-        if (prompt) {
-            promptParts.push({ text: prompt });
-        }
+        let userPrompt = prompt;
+
         if (attachments) {
             for (const att of attachments) {
-                promptParts.push({
-                    inlineData: {
-                        mimeType: att.mimeType,
-                        data: att.data,
-                    }
-                });
+                if (att.source === 'base64') {
+                    promptParts.push({
+                        inlineData: {
+                            mimeType: att.mimeType,
+                            data: att.data,
+                        }
+                    });
+                } else if (att.source === 'text') {
+                    // Prepend file content to the user's text prompt
+                    userPrompt = `The user has provided the following file named "${att.name}":\n\n\`\`\`\n${att.data}\n\`\`\`\n\nNow, regarding this file, the user says: ${prompt}`;
+                }
             }
         }
+        // Always add the text part, even if it's just the modified prompt.
+        // The API requires a text part for multimodal requests.
+        if (userPrompt.trim() || promptParts.length > 0) {
+            promptParts.unshift({ text: userPrompt });
+        }
+
 
         let stream = await chatSession.sendMessageStream({ message: promptParts });
         
@@ -175,4 +188,29 @@ export const getChatResponseStream = (
             check();
         }),
     };
+};
+
+export const generateTitleForConversation = async (history: ChatMessage[]): Promise<string> => {
+    const genAI = getAi();
+    
+    const historyText = history
+        .filter(m => m.content && (m.role === 'user' || m.role === 'model'))
+        .map(m => `${m.role}: ${m.content}`)
+        .slice(-4) // Use last 4 messages for brevity
+        .join('\n');
+
+    if (!historyText) return '';
+
+    const prompt = `Summarize the following conversation in 5 words or less to be used as a title. Return only the title itself, with no introductory text, quotation marks, or punctuation.\n\n---\n\n${historyText}`;
+    
+    try {
+        const response = await genAI.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+        return response.text.trim().replace(/"/g, '');
+    } catch (error) {
+        console.error("Error generating title:", error);
+        return ''; // Return empty string on failure
+    }
 };

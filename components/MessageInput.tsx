@@ -3,18 +3,33 @@ import { SendIcon } from './icons/SendIcon';
 import { Attachment } from '../types';
 import { PaperClipIcon } from './icons/PaperClipIcon';
 import { XIcon } from './icons/XIcon';
+import { DocumentTextIcon } from './icons/DocumentTextIcon';
 
 interface MessageInputProps {
   onSendMessage: (input: string, attachment: Attachment | null) => void;
   isLoading: boolean;
 }
 
-const fileToBase64 = (file: File): Promise<string> => {
+const readFile = (file: File): Promise<{ data: string; source: 'base64' | 'text' }> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
         reader.onerror = error => reject(error);
+        reader.onload = () => {
+            if (file.type.startsWith('image/')) {
+                resolve({ data: (reader.result as string).split(',')[1], source: 'base64' });
+            } else {
+                resolve({ data: reader.result as string, source: 'text' });
+            }
+        };
+
+        if (file.type.startsWith('image/')) {
+            reader.readAsDataURL(file);
+        } else if (file.type.startsWith('text/') || file.type === 'application/json' || file.name.endsWith('.md')) {
+            reader.readAsText(file);
+        } else {
+            // Fallback for other file types if needed, or reject
+            reject(new Error("Unsupported file type"));
+        }
     });
 }
 
@@ -39,14 +54,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isLoa
     const file = e.target.files?.[0];
     if (file) {
         try {
-            const base64String = await fileToBase64(file);
+            const { data, source } = await readFile(file);
             setAttachment({
                 name: file.name,
                 mimeType: file.type,
-                data: base64String.split(',')[1] // Remove the data URL prefix
+                data,
+                source,
             });
         } catch (error) {
-            console.error("Error converting file to base64", error);
+            console.error("Error reading file:", error);
             // Optionally, show an error to the user
         }
     }
@@ -57,10 +73,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isLoa
         {attachment && (
             <div className="px-3 py-2 bg-[#EDF2F4] dark:bg-[#383a51] rounded-lg flex items-center justify-between text-sm text-[#2B2D42] dark:text-[#EDF2F4]">
                 <div className="flex items-center gap-2 truncate">
-                    {attachment.mimeType.startsWith('image/') ? (
+                    {attachment.source === 'base64' ? (
                         <img src={`data:${attachment.mimeType};base64,${attachment.data}`} className="w-7 h-7 rounded object-cover flex-shrink-0" alt="Attachment preview"/>
                     ) : (
-                        <PaperClipIcon className="w-5 h-5 flex-shrink-0 text-[#8D99AE]" />
+                        <DocumentTextIcon className="w-6 h-6 flex-shrink-0 text-[#8D99AE]" />
                     )}
                     <span className="truncate font-medium">{attachment.name}</span>
                 </div>
@@ -83,7 +99,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isLoa
                 ref={fileInputRef} 
                 onChange={handleFileChange} 
                 className="hidden" 
-                accept="image/jpeg,image/png,image/webp,image/gif"
+                accept="image/jpeg,image/png,image/webp,image/gif,text/plain,text/csv,application/json,.md"
             />
             <input
                 type="text"
