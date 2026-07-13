@@ -1,16 +1,16 @@
+import { Consultant, ToolDefinition } from './types';
 
+// Tool definitions use Anthropic's `input_schema` (standard JSON Schema).
+// (Ported from Gemini FunctionDeclaration / Type.OBJECT.)
 
-import { Consultant } from './types';
-import { FunctionDeclaration, Type } from '@google/genai';
-
-const getStockPriceDeclaration: FunctionDeclaration = {
+const getStockPriceDeclaration: ToolDefinition = {
     name: 'getStockPrice',
     description: 'Get the current stock price for a given ticker symbol.',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
             ticker: {
-                type: Type.STRING,
+                type: 'string',
                 description: 'The stock ticker symbol (e.g., "GOOGL").',
             },
         },
@@ -18,27 +18,27 @@ const getStockPriceDeclaration: FunctionDeclaration = {
     },
 };
 
-const legalRiskAssessorDeclaration: FunctionDeclaration = {
+const legalRiskAssessorDeclaration: ToolDefinition = {
     name: 'legalRiskAssessor',
     description: 'Heuristic risk scoring across issue, party, and document dimensions.',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
             issueType: {
-                type: Type.STRING,
+                type: 'string',
                 description: 'The type of legal issue (e.g., "Contract Dispute", "Data Privacy").',
             },
             severityHint: {
-                type: Type.STRING,
+                type: 'string',
                 description: 'A hint of the severity (e.g., "low", "medium", "high").',
             },
             facts: {
-                type: Type.OBJECT,
+                type: 'object',
                 description: 'An object containing key facts about the situation.',
             },
             documents: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
+                type: 'array',
+                items: { type: 'string' },
                 description: 'An array of document names or identifiers related to the issue.',
             },
         },
@@ -46,22 +46,22 @@ const legalRiskAssessorDeclaration: FunctionDeclaration = {
     },
 };
 
-const complianceChecklistBuilderDeclaration: FunctionDeclaration = {
+const complianceChecklistBuilderDeclaration: ToolDefinition = {
     name: 'complianceChecklistBuilder',
     description: 'Generates a non-jurisdictional compliance checklist for a given scenario.',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
             scenario: {
-                type: Type.STRING,
+                type: 'string',
                 description: 'The business scenario requiring a compliance check (e.g., "Hiring a new employee", "Launching a marketing campaign").',
             },
             industry: {
-                type: Type.STRING,
+                type: 'string',
                 description: 'The industry the business operates in (e.g., "Healthcare", "E-commerce").',
             },
             scope: {
-                type: Type.STRING,
+                type: 'string',
                 description: 'The scope of the checklist (e.g., "Data Privacy", "Employment Law").',
             },
         },
@@ -69,180 +69,180 @@ const complianceChecklistBuilderDeclaration: FunctionDeclaration = {
     },
 };
 
-const estatePlanningChecklistDeclaration: FunctionDeclaration = {
+const estatePlanningChecklistDeclaration: ToolDefinition = {
     name: 'estate_planning_checklist',
     description: 'Creates a personalized estate-planning checklist (general principles) based on family, assets, beneficiaries, and goals.',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
-            family_structure: { type: Type.OBJECT, description: 'e.g., { marital_status: "married", children: 2 }' },
-            assets_overview: { type: Type.OBJECT, description: 'e.g., { real_estate: true, investments: "over 1M" }' },
-            beneficiary_intent: { type: Type.OBJECT, description: 'e.g., { primary: "spouse", contingent: "children in trust" }' },
-            goals: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'e.g., ["avoid probate", "minimize estate tax"]' },
-            jurisdiction_hint: { type: Type.STRING, description: 'The U.S. state, if known.' },
+            family_structure: { type: 'object', description: 'e.g., { marital_status: "married", children: 2 }' },
+            assets_overview: { type: 'object', description: 'e.g., { real_estate: true, investments: "over 1M" }' },
+            beneficiary_intent: { type: 'object', description: 'e.g., { primary: "spouse", contingent: "children in trust" }' },
+            goals: { type: 'array', items: { type: 'string' }, description: 'e.g., ["avoid probate", "minimize estate tax"]' },
+            jurisdiction_hint: { type: 'string', description: 'The U.S. state, if known.' },
         },
         required: ['family_structure', 'assets_overview', 'goals'],
     },
 };
 
-const probateComplexityEstimatorDeclaration: FunctionDeclaration = {
+const probateComplexityEstimatorDeclaration: ToolDefinition = {
     name: 'probate_complexity_estimator',
     description: 'Estimates likely probate complexity level based on asset titling, will presence, and thresholds (generalized; jurisdiction-specific via lookup).',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
-            has_will: { type: Type.BOOLEAN },
-            asset_titling: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'e.g., ["joint_tenancy", "individual", "in_trust"]' },
-            estate_value_estimate: { type: Type.NUMBER },
-            jurisdiction_hint: { type: Type.STRING, description: 'The U.S. state, if known.' },
+            has_will: { type: 'boolean' },
+            asset_titling: { type: 'array', items: { type: 'string' }, description: 'e.g., ["joint_tenancy", "individual", "in_trust"]' },
+            estate_value_estimate: { type: 'number' },
+            jurisdiction_hint: { type: 'string', description: 'The U.S. state, if known.' },
         },
         required: ['has_will', 'asset_titling', 'estate_value_estimate'],
     },
 };
 
-const jurisdictionStateLawLookupDeclaration: FunctionDeclaration = {
+const jurisdictionStateLawLookupDeclaration: ToolDefinition = {
     name: 'jurisdiction_state_law_lookup',
     description: 'Runs an AI/web search to summarize up-to-date state-specific rules for estate planning (probate thresholds, witnessing/notary rules, POA/AHCD formalities, state estate/inheritance tax, community property).',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
-            state: { type: Type.STRING, description: 'The U.S. state to look up (e.g., "Georgia").' },
-            topic: { type: Type.STRING, description: 'The legal topic (e.g., "will execution formalities", "probate threshold").' },
-            focus_points: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Specific points to research (e.g., ["witness count", "notary requirement"]).' },
+            state: { type: 'string', description: 'The U.S. state to look up (e.g., "Georgia").' },
+            topic: { type: 'string', description: 'The legal topic (e.g., "will execution formalities", "probate threshold").' },
+            focus_points: { type: 'array', items: { type: 'string' }, description: 'Specific points to research (e.g., ["witness count", "notary requirement"]).' },
         },
         required: ['state', 'topic'],
     },
 };
 
-const retirementReadinessCalculatorDeclaration: FunctionDeclaration = {
+const retirementReadinessCalculatorDeclaration: ToolDefinition = {
     name: 'retirement_readiness_calculator',
     description: 'High-level readiness estimate using savings, returns, inflation, and longevity assumptions.',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
-            current_age: { type: Type.NUMBER },
-            retire_age: { type: Type.NUMBER },
-            current_savings: { type: Type.NUMBER },
-            annual_contribution: { type: Type.NUMBER },
-            expected_return: { type: Type.NUMBER, description: 'Expected annual return on investments (e.g., 0.07 for 7%).' },
-            inflation: { type: Type.NUMBER, description: 'Assumed annual inflation rate (e.g., 0.03 for 3%).' },
-            income_need_pct: { type: Type.NUMBER, description: 'Percentage of pre-retirement income needed (e.g., 0.80 for 80%).' },
+            current_age: { type: 'number' },
+            retire_age: { type: 'number' },
+            current_savings: { type: 'number' },
+            annual_contribution: { type: 'number' },
+            expected_return: { type: 'number', description: 'Expected annual return on investments (e.g., 0.07 for 7%).' },
+            inflation: { type: 'number', description: 'Assumed annual inflation rate (e.g., 0.03 for 3%).' },
+            income_need_pct: { type: 'number', description: 'Percentage of pre-retirement income needed (e.g., 0.80 for 80%).' },
         },
         required: ['current_age', 'retire_age', 'current_savings', 'annual_contribution', 'expected_return', 'inflation', 'income_need_pct'],
     },
 };
 
-const withdrawalPolicyDesignerDeclaration: FunctionDeclaration = {
+const withdrawalPolicyDesignerDeclaration: ToolDefinition = {
     name: 'withdrawal_policy_designer',
     description: 'Designs a withdrawal policy (guardrails/buckets) with risk bands and rebalancing cues.',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
-            portfolio_value: { type: Type.NUMBER },
-            risk_profile: { type: Type.STRING, description: 'Client risk profile (e.g., "conservative", "moderate", "aggressive").' },
-            income_floor: { type: Type.NUMBER, description: 'Minimum annual income needed from the portfolio.' },
-            ceiling_pct: { type: Type.NUMBER, description: 'Upper guardrail percentage for withdrawals (e.g., 0.05 for 5%).' },
-            floor_pct: { type: Type.NUMBER, description: 'Lower guardrail percentage for withdrawals (e.g., 0.03 for 3%).' },
+            portfolio_value: { type: 'number' },
+            risk_profile: { type: 'string', description: 'Client risk profile (e.g., "conservative", "moderate", "aggressive").' },
+            income_floor: { type: 'number', description: 'Minimum annual income needed from the portfolio.' },
+            ceiling_pct: { type: 'number', description: 'Upper guardrail percentage for withdrawals (e.g., 0.05 for 5%).' },
+            floor_pct: { type: 'number', description: 'Lower guardrail percentage for withdrawals (e.g., 0.03 for 3%).' },
         },
         required: ['portfolio_value', 'risk_profile', 'income_floor', 'ceiling_pct', 'floor_pct'],
     },
 };
 
-const jurisdictionRetirementLookupDeclaration: FunctionDeclaration = {
+const jurisdictionRetirementLookupDeclaration: ToolDefinition = {
     name: 'jurisdiction_retirement_lookup',
     description: 'Runs AI/web search for state-specific retirement considerations (state income tax on SS/pensions, healthcare subsidies, public pensions, property tax relief).',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
-            state: { type: Type.STRING },
-            topic: { type: Type.STRING, description: 'The retirement topic (e.g., "state income tax", "medicaid eligibility").' },
-            focus_points: { type: Type.ARRAY, items: { type: Type.STRING } },
+            state: { type: 'string' },
+            topic: { type: 'string', description: 'The retirement topic (e.g., "state income tax", "medicaid eligibility").' },
+            focus_points: { type: 'array', items: { type: 'string' } },
         },
         required: ['state', 'topic'],
     },
 };
 
-const characterProfileBuilderDeclaration: FunctionDeclaration = {
+const characterProfileBuilderDeclaration: ToolDefinition = {
     name: 'character_profile_builder',
     description: 'Generates a detailed Character Profile Matrix from seeds and constraints.',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
-            genre: { type: Type.STRING },
-            audience: { type: Type.STRING },
-            role: { type: Type.STRING },
-            character_seed: { type: Type.OBJECT },
-            story_context: { type: Type.OBJECT },
-            themes: { type: Type.ARRAY, items: { type: Type.STRING } },
+            genre: { type: 'string' },
+            audience: { type: 'string' },
+            role: { type: 'string' },
+            character_seed: { type: 'object' },
+            story_context: { type: 'object' },
+            themes: { type: 'array', items: { type: 'string' } },
         },
         required: ['genre', 'role', 'character_seed', 'story_context'],
     },
 };
 
-const characterArcPlannerDeclaration: FunctionDeclaration = {
+const characterArcPlannerDeclaration: ToolDefinition = {
     name: 'character_arc_planner',
     description: 'Designs the arc stages and beat alignment.',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
-            profile_matrix: { type: Type.OBJECT },
-            beats: { type: Type.OBJECT },
-            target_arc_type: { type: Type.STRING },
+            profile_matrix: { type: 'object' },
+            beats: { type: 'object' },
+            target_arc_type: { type: 'string' },
         },
         required: ['profile_matrix', 'target_arc_type'],
     },
 };
 
-const consistencyCheckerDeclaration: FunctionDeclaration = {
+const consistencyCheckerDeclaration: ToolDefinition = {
     name: 'consistency_checker',
     description: 'Checks dialogue, actions, and decisions for alignment with established traits.',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
-            profile_matrix: { type: Type.OBJECT },
-            excerpts: { type: Type.ARRAY, items: { type: Type.STRING } },
+            profile_matrix: { type: 'object' },
+            excerpts: { type: 'array', items: { type: 'string' } },
         },
         required: ['profile_matrix', 'excerpts'],
     },
 };
 
-const archetypeSuggesterDeclaration: FunctionDeclaration = {
+const archetypeSuggesterDeclaration: ToolDefinition = {
     name: 'archetype_suggester',
     description: 'Suggests archetypes and subversions aligned to genre expectations and themes.',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
-            genre: { type: Type.STRING },
-            themes: { type: Type.ARRAY, items: { type: Type.STRING } },
-            role: { type: Type.STRING },
+            genre: { type: 'string' },
+            themes: { type: 'array', items: { type: 'string' } },
+            role: { type: 'string' },
         },
         required: ['genre', 'themes', 'role'],
     },
 };
 
-const sensitivityBiasScannerDeclaration: FunctionDeclaration = {
+const sensitivityBiasScannerDeclaration: ToolDefinition = {
     name: 'sensitivity_bias_scanner',
     description: 'Scans descriptions and arcs for potential stereotypes and suggests respectful alternatives.',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
-            profile_matrix: { type: Type.OBJECT },
-            excerpts: { type: Type.ARRAY, items: { type: Type.STRING } },
-            cultural_context: { type: Type.STRING },
+            profile_matrix: { type: 'object' },
+            excerpts: { type: 'array', items: { type: 'string' } },
+            cultural_context: { type: 'string' },
         },
         required: ['profile_matrix', 'excerpts'],
     },
 };
 
-const voiceCalibratorDeclaration: FunctionDeclaration = {
+const voiceCalibratorDeclaration: ToolDefinition = {
     name: 'voice_calibrator',
     description: 'Calibrates dialogue samples to match desired voice traits and emotional arc.',
-    parameters: {
-        type: Type.OBJECT,
+    input_schema: {
+        type: 'object',
         properties: {
-            voice_targets: { type: Type.ARRAY, items: { type: Type.STRING } },
-            scene_context: { type: Type.OBJECT },
-            sample_lines: { type: Type.ARRAY, items: { type: Type.STRING } },
+            voice_targets: { type: 'array', items: { type: 'string' } },
+            scene_context: { type: 'object' },
+            sample_lines: { type: 'array', items: { type: 'string' } },
         },
         required: ['voice_targets', 'scene_context', 'sample_lines'],
     },
@@ -254,7 +254,7 @@ export const CONSULTANTS: Consultant[] = [
     id: 'strategic-advisor',
     name: 'Strategic Advisor',
     description: 'High-level business strategy and long-term planning.',
-    model: 'gemini-2.5-pro',
+    model: 'claude-sonnet-5',
     systemInstruction: `You are a top-tier venture capital partner at a firm specializing in AI, and a former successful founder of an AI company. Your advice is direct, strategic, and grounded in the realities of building a defensible, scalable business. You think like an investor and an operator.
 
 When providing strategic frameworks, you MUST go beyond surface-level advice and address the following critical operational pillars, in addition to standard market and tech strategy:
@@ -271,13 +271,13 @@ Provide concise, actionable, and data-driven advice. Your goal is to give a foun
       "Draft a go-to-market strategy for a B2B AI tool.",
       "What are the latest trends in AI for 2024?",
     ],
-    tools: [{ googleSearch: {} }]
+    tools: [{ webSearch: true }]
   },
   {
     id: 'code-architect',
     name: 'Code Architect',
     description: 'Software design, code review, and technical best practices.',
-    model: 'gemini-2.5-pro',
+    model: 'claude-sonnet-5',
     systemInstruction: `You are a Principal Software Engineer at Google with 15 years of experience building large-scale, distributed systems. You are an expert in system design, API development, cloud architecture (GCP/AWS), and writing clean, maintainable code. Your advice is practical, forward-looking, and always considers trade-offs like scalability, cost, and developer velocity.
 
 When presented with code, you perform a meticulous review, checking for:
@@ -293,13 +293,13 @@ When asked for architectural advice, provide clear diagrams using Mermaid syntax
       "Explain the trade-offs between microservices and a monolith.",
       "How should I structure a React project for a large team?",
     ],
-    tools: [{ googleSearch: {} }]
+    tools: [{ webSearch: true }]
   },
   {
     id: 'legal-intelligence-system',
     name: 'Legal Intelligence System',
     description: 'A multi-tiered legal intelligence agent combining concise advisory guidance with deep compliance and risk analysis. Now includes Estate Planning with automatic state-jurisdiction lookups.',
-    model: 'gemini-2.5-pro',
+    model: 'claude-sonnet-5',
     systemInstruction: `# Role
 Legal Intelligence System
 
@@ -358,20 +358,20 @@ Professional, objective, clear, and empathetic. Balance precision with approacha
     ],
     tools: [
         { functionDeclarations: [
-            legalRiskAssessorDeclaration, 
+            legalRiskAssessorDeclaration,
             complianceChecklistBuilderDeclaration,
             estatePlanningChecklistDeclaration,
             probateComplexityEstimatorDeclaration,
             jurisdictionStateLawLookupDeclaration
         ] },
-        { googleSearch: {} }
+        { webSearch: true }
     ]
   },
   {
     id: 'retirement-planning-intelligence',
     name: 'Retirement Planning Intelligence',
     description: 'An expert retirement planning agent delivering personalized, actionable guidance.',
-    model: 'gemini-2.5-pro',
+    model: 'claude-sonnet-5',
     systemInstruction: `# Role: Expert Retirement Planning Consultant
 You are a highly experienced retirement planning consultant with deep technical knowledge and empathetic communication.
 
@@ -409,7 +409,7 @@ Provide personalized, actionable retirement guidance based on the client’s uni
 
 ## Jurisdiction Policy
 - If user specifies a US state (or relocating), note possible state tax and healthcare implications.
-- If state matters (tax, public pensions, Medicaid/LTSS), trigger \`retirement.jurisdiction.lookup\` and summarize findings with citations.
+- If state matters (tax, public pensions, Medicaid/LTSS), trigger \`jurisdiction_retirement_lookup\` and summarize findings with citations.
 - If unknown, ask once for state; proceed with general guidance meanwhile.
 
 ## Review Cadence
@@ -426,14 +426,14 @@ Recommend annual review, or after life events (marriage, divorce, inheritance, h
             withdrawalPolicyDesignerDeclaration,
             jurisdictionRetirementLookupDeclaration,
         ] },
-        { googleSearch: {} }
+        { webSearch: true }
     ]
   },
   {
     id: 'ebook-character-intelligence',
     name: 'E-book Character Intelligence',
     description: 'An expert character development agent for e-books and creative writing.',
-    model: 'gemini-2.5-pro',
+    model: 'claude-sonnet-5',
     systemInstruction: `# E-book Character Development Expert
 
 ## Role & Context
@@ -484,14 +484,13 @@ Help authors create detailed, believable, and engaging characters by providing s
             sensitivityBiasScannerDeclaration,
             voiceCalibratorDeclaration,
         ] },
-        { googleSearch: {} }
     ]
   },
   {
     id: 'marketing-guru',
     name: 'Marketing Guru',
     description: 'Digital marketing, branding, and customer acquisition.',
-    model: 'gemini-2.5-flash',
+    model: 'claude-sonnet-5',
     systemInstruction: 'You are a creative and energetic marketing director for a trendy startup. Your expertise is in viral marketing, social media engagement, and building a strong brand identity. Provide innovative and modern marketing ideas.',
     promptSuggestions: [
         "Suggest a viral marketing campaign for a new mobile app.",
@@ -499,13 +498,13 @@ Help authors create detailed, believable, and engaging characters by providing s
         "What are some low-budget marketing strategies for a startup?",
         "What's the best way to market a new tech product launching next month?",
     ],
-    tools: [{ googleSearch: {} }]
+    tools: [{ webSearch: true }]
   },
   {
     id: 'finance-analyst',
     name: 'Finance Analyst',
     description: 'Financial modeling, investment, and risk assessment.',
-    model: 'gemini-2.5-pro',
+    model: 'claude-sonnet-5',
     systemInstruction: 'You are a meticulous financial analyst. Your answers should be precise, based on financial principles, and include quantitative insights where possible. Focus on profitability, investment viability, and risk mitigation. When asked for a stock price, use the getStockPrice tool.',
     promptSuggestions: [
         "Create a simple financial model for a subscription-based business.",
@@ -519,7 +518,7 @@ Help authors create detailed, believable, and engaging characters by providing s
     id: 'operations-expert',
     name: 'Operations Expert',
     description: 'Process optimization, supply chain, and efficiency.',
-    model: 'gemini-2.5-flash',
+    model: 'claude-sonnet-5',
     systemInstruction: 'You are an operations manager obsessed with efficiency. Your goal is to streamline processes, reduce waste, and improve productivity. Provide practical steps and frameworks for improving business operations.',
     promptSuggestions: [
         "How can I optimize the supply chain for my e-commerce store?",

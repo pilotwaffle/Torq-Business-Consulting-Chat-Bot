@@ -1,216 +1,284 @@
-// Fix: Removed non-existent 'FunctionCallPart' and imported 'Content' for use in history.
-import { GoogleGenAI, Chat, Part, Content } from "@google/genai";
+// AI service — ported from Google Gemini (@google/genai) to Anthropic Claude.
+// The file name is kept as `geminiService.ts` only to avoid churning imports;
+// it now talks to the Anthropic Messages API.
+//
+// SECURITY NOTE: This is a browser (Vite) app that calls Anthropic directly
+// from client-side code, so the API key is bundled and `dangerouslyAllowBrowser`
+// is required. This exposes the key to anyone who loads the site. It matches the
+// prior Gemini setup and is fine for local/personal use — do NOT deploy this
+// publicly with a live key. For a public deploy, move the call behind a small
+// server-side proxy that holds the key.
+
+import Anthropic from '@anthropic-ai/sdk';
 import { Consultant, ChatMessage, ToolCallResponse, Attachment } from '../types';
 import * as toolService from './toolService';
 
-let ai: GoogleGenAI | null = null;
+const MODEL = 'claude-sonnet-5';
+const MAX_TOKENS = 8192;
 
-const getAi = () => {
-    if (!ai) {
-        if (!process.env.API_KEY) {
-            throw new Error("API_KEY environment variable not set.");
-        }
-        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let client: Anthropic | null = null;
+
+const getClient = (): Anthropic => {
+  if (!client) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error('ANTHROPIC_API_KEY environment variable not set.');
     }
-    return ai;
-}
-
-// Fix: The function returns an array of Content objects, not Part objects.
-function convertToGeminiHistory(history: ChatMessage[]): Content[] {
-    return history.flatMap(msg => {
-        if (msg.role === 'tool' && msg.toolCallResponses) {
-            return {
-                role: 'tool',
-                parts: msg.toolCallResponses.map(toolResponse => ({
-                    functionResponse: {
-                        name: toolResponse.name,
-                        response: toolResponse.response,
-                    }
-                }))
-            };
-        }
-        if (msg.role === 'model' && msg.toolCalls) {
-            return {
-                role: msg.role,
-                parts: msg.toolCalls.map(toolCall => ({
-                    functionCall: {
-                        name: toolCall.name,
-                        args: toolCall.args,
-                    }
-                }))
-            };
-        }
-        if (msg.role === 'model' || msg.role === 'user') {
-            const parts: Part[] = [];
-            if (msg.content) {
-                parts.push({ text: msg.content });
-            }
-            if (msg.attachments) {
-                msg.attachments.forEach(att => {
-                    // Only include attachments with base64 source in history for multimodality
-                    if (att.source === 'base64') {
-                        parts.push({
-                            inlineData: {
-                                mimeType: att.mimeType,
-                                data: att.data
-                            }
-                        });
-                    }
-                });
-            }
-            if (parts.length === 0) return [];
-            
-            return {
-                role: msg.role,
-                parts: parts
-            };
-        }
-        return [];
-    });
-}
-
-export const getChatResponseStream = (
-    consultant: Consultant,
-    session: Chat | undefined,
-    prompt: string,
-    history: ChatMessage[],
-    attachments: Attachment[] | undefined
-) => {
-    let finalSession: Chat;
-
-    const stream = async function* (): AsyncGenerator<Partial<ChatMessage>, void, undefined> {
-        const genAI = getAi();
-        let chatSession = session;
-
-        if (!chatSession) {
-            // Fix: This now correctly passes Content[] to the history property.
-            const genAIHistory = convertToGeminiHistory(history);
-
-            // FIX: The 'tools' parameter should be inside the 'config' object.
-            chatSession = genAI.chats.create({
-                model: consultant.model,
-                history: genAIHistory,
-                config: {
-                    systemInstruction: consultant.systemInstruction,
-                    tools: consultant.tools,
-                },
-            });
-        }
-        finalSession = chatSession;
-        
-        const promptParts: Part[] = [];
-        let userPrompt = prompt;
-
-        if (attachments) {
-            for (const att of attachments) {
-                if (att.source === 'base64') {
-                    promptParts.push({
-                        inlineData: {
-                            mimeType: att.mimeType,
-                            data: att.data,
-                        }
-                    });
-                } else if (att.source === 'text') {
-                    // Prepend file content to the user's text prompt
-                    userPrompt = `The user has provided the following file named "${att.name}":\n\n\`\`\`\n${att.data}\n\`\`\`\n\nNow, regarding this file, the user says: ${prompt}`;
-                }
-            }
-        }
-        // Always add the text part, even if it's just the modified prompt.
-        // The API requires a text part for multimodal requests.
-        if (userPrompt.trim() || promptParts.length > 0) {
-            promptParts.unshift({ text: userPrompt });
-        }
-
-
-        let stream = await chatSession.sendMessageStream({ message: promptParts });
-        
-        let toolResponses: ToolCallResponse[] = [];
-
-        for await (const chunk of stream) {
-            const functionCalls = chunk.functionCalls;
-            
-            if (functionCalls && functionCalls.length > 0) {
-                yield { role: 'model', toolCalls: functionCalls.map(fc => ({ name: fc.name, args: fc.args })) };
-                
-                for (const call of functionCalls) {
-                    const toolResponse = await toolService.executeTool(call.name, call.args);
-                    toolResponses.push(toolResponse);
-                }
-            } else {
-                 if (chunk.text) {
-                    yield { content: chunk.text };
-                }
-            }
-
-            const groundingMetadata = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
-            if (groundingMetadata && groundingMetadata.length > 0) {
-                yield { groundingMetadata: groundingMetadata.map(g => g.web).filter(Boolean) as any };
-            }
-        }
-        
-        if (toolResponses.length > 0) {
-            yield { role: 'tool', toolCallResponses: toolResponses };
-            yield { role: 'model', content: '' };
-
-            // Fix: The previous object was incorrectly typed as 'Part' with a 'role' property
-            // and sent with a 'history' property which is not correct for continuing a chat.
-            // Sending the tool responses as parts of a new message is the correct approach.
-            const toolResponseParts: Part[] = toolResponses.map(toolResponse => ({
-                functionResponse: {
-                    name: toolResponse.name,
-                    response: toolResponse.response,
-                }
-            }));
-
-            // FIX: The `sendMessageStream` method expects an object with a 'message' property.
-            stream = await chatSession.sendMessageStream({ message: toolResponseParts });
-            for await (const chunk of stream) {
-                if (chunk.text) {
-                    yield { content: chunk.text };
-                }
-            }
-        }
-    }
-
-    return {
-        stream: stream(),
-        finalSession: new Promise<Chat>((resolve) => {
-            // A bit of a hack to resolve the session after the stream is consumed.
-            // In a real app, you might manage session state more explicitly.
-            const check = () => {
-                if (finalSession) {
-                    resolve(finalSession);
-                } else {
-                    setTimeout(check, 100);
-                }
-            };
-            check();
-        }),
-    };
+    client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+  }
+  return client;
 };
 
-export const generateTitleForConversation = async (history: ChatMessage[]): Promise<string> => {
-    const genAI = getAi();
-    
-    const historyText = history
-        .filter(m => m.content && (m.role === 'user' || m.role === 'model'))
-        .map(m => `${m.role}: ${m.content}`)
-        .slice(-4) // Use last 4 messages for brevity
-        .join('\n');
+// ---------------------------------------------------------------------------
+// History conversion: our ChatMessage[] -> Anthropic MessageParam[]
+// ---------------------------------------------------------------------------
+// Anthropic is stateless: every request sends the full conversation. A model
+// turn that made tool calls is an `assistant` message with `tool_use` blocks;
+// the paired tool outputs are a following `user` message with `tool_result`
+// blocks.
 
-    if (!historyText) return '';
-
-    const prompt = `Summarize the following conversation in 5 words or less to be used as a title. Return only the title itself, with no introductory text, quotation marks, or punctuation.\n\n---\n\n${historyText}`;
-    
-    try {
-        const response = await genAI.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-        });
-        return response.text.trim().replace(/"/g, '');
-    } catch (error) {
-        console.error("Error generating title:", error);
-        return ''; // Return empty string on failure
+function attachmentsToBlocks(attachments?: Attachment[]): Anthropic.ContentBlockParam[] {
+  const blocks: Anthropic.ContentBlockParam[] = [];
+  if (!attachments) return blocks;
+  for (const att of attachments) {
+    if (att.source === 'base64') {
+      blocks.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: att.mimeType as Anthropic.Base64ImageSource['media_type'],
+          data: att.data,
+        },
+      });
     }
+    // 'text' attachments are folded into the prompt text by the caller.
+  }
+  return blocks;
+}
+
+function buildAnthropicHistory(history: ChatMessage[]): Anthropic.MessageParam[] {
+  const messages: Anthropic.MessageParam[] = [];
+
+  for (const msg of history) {
+    if (msg.role === 'tool' && msg.toolCallResponses) {
+      // Tool outputs -> a user message of tool_result blocks.
+      messages.push({
+        role: 'user',
+        content: msg.toolCallResponses.map((tr) => ({
+          type: 'tool_result' as const,
+          tool_use_id: tr.id ?? tr.name,
+          content: JSON.stringify(tr.response),
+        })),
+      });
+      continue;
+    }
+
+    if (msg.role === 'model' && msg.toolCalls && msg.toolCalls.length > 0) {
+      // Assistant turn that issued tool calls.
+      const content: Anthropic.ContentBlockParam[] = [];
+      if (msg.content) content.push({ type: 'text', text: msg.content });
+      for (const call of msg.toolCalls) {
+        content.push({
+          type: 'tool_use',
+          id: call.id ?? call.name,
+          name: call.name,
+          input: call.args ?? {},
+        });
+      }
+      messages.push({ role: 'assistant', content });
+      continue;
+    }
+
+    if (msg.role === 'model' || msg.role === 'user') {
+      const role = msg.role === 'model' ? 'assistant' : 'user';
+      const blocks: Anthropic.ContentBlockParam[] = [];
+      if (msg.content) blocks.push({ type: 'text', text: msg.content });
+      if (msg.role === 'user') blocks.push(...attachmentsToBlocks(msg.attachments));
+      if (blocks.length === 0) continue;
+      messages.push({ role, content: blocks });
+    }
+  }
+
+  return messages;
+}
+
+// Build the `tools` array for a consultant: custom tools plus (optionally)
+// Anthropic's server-side web_search tool where the consultant used Google search.
+function buildTools(consultant: Consultant): Anthropic.ToolUnion[] | undefined {
+  if (!consultant.tools) return undefined;
+  const tools: Anthropic.ToolUnion[] = [];
+  for (const group of consultant.tools) {
+    if (group.functionDeclarations) {
+      for (const fn of group.functionDeclarations) {
+        tools.push({
+          name: fn.name,
+          description: fn.description,
+          input_schema: fn.input_schema as Anthropic.Tool.InputSchema,
+        });
+      }
+    }
+    if (group.webSearch) {
+      tools.push({ type: 'web_search_20250305', name: 'web_search', max_uses: 5 } as Anthropic.ToolUnion);
+    }
+  }
+  return tools.length > 0 ? tools : undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Streaming chat with the tool-use loop.
+// ---------------------------------------------------------------------------
+// Preserves the original interface: returns { stream, finalSession }.
+// `finalSession` is a no-op placeholder — Anthropic keeps no server-side session;
+// the App maintains conversation state in its message history.
+export const getChatResponseStream = (
+  consultant: Consultant,
+  _session: unknown, // unused: Anthropic is stateless
+  prompt: string,
+  history: ChatMessage[],
+  attachments: Attachment[] | undefined
+) => {
+  const stream = async function* (): AsyncGenerator<Partial<ChatMessage>, void, undefined> {
+    const anthropic = getClient();
+    const tools = buildTools(consultant);
+
+    // Assemble the running message list from prior history + this user turn.
+    const messages = buildAnthropicHistory(history);
+
+    // Compose the current user turn (text + any image/text attachments).
+    let userPrompt = prompt;
+    const userBlocks: Anthropic.ContentBlockParam[] = [];
+    if (attachments) {
+      for (const att of attachments) {
+        if (att.source === 'text') {
+          userPrompt = `The user has provided the following file named "${att.name}":\n\n\`\`\`\n${att.data}\n\`\`\`\n\nNow, regarding this file, the user says: ${prompt}`;
+        }
+      }
+      userBlocks.push(...attachmentsToBlocks(attachments));
+    }
+    if (userPrompt.trim() || userBlocks.length > 0) {
+      userBlocks.unshift({ type: 'text', text: userPrompt });
+    }
+    messages.push({ role: 'user', content: userBlocks });
+
+    // Tool-use loop: keep calling the model until it stops requesting tools.
+    // Bounded to avoid runaway loops.
+    for (let turn = 0; turn < 8; turn++) {
+      const requestParams: Anthropic.MessageCreateParamsStreaming = {
+        model: consultant.model || MODEL,
+        max_tokens: MAX_TOKENS,
+        system: consultant.systemInstruction,
+        messages,
+        stream: true,
+        ...(tools ? { tools } : {}),
+      };
+
+      const streamResp = anthropic.messages.stream(requestParams);
+
+      // Stream text deltas to the UI as they arrive.
+      for await (const event of streamResp) {
+        if (
+          event.type === 'content_block_delta' &&
+          event.delta.type === 'text_delta'
+        ) {
+          yield { content: event.delta.text };
+        }
+      }
+
+      const finalMessage = await streamResp.finalMessage();
+
+      // Collect any tool_use blocks the model emitted this turn.
+      const toolUseBlocks = finalMessage.content.filter(
+        (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'
+      );
+
+      // Surface web_search citations as grounding metadata (if present).
+      const searchResults = finalMessage.content.filter(
+        (b: any) => b.type === 'web_search_tool_result'
+      ) as any[];
+      if (searchResults.length > 0) {
+        const grounding = searchResults.flatMap((r) =>
+          Array.isArray(r.content)
+            ? r.content
+                .filter((c: any) => c.type === 'web_search_result')
+                .map((c: any) => ({ uri: c.url, title: c.title }))
+            : []
+        );
+        if (grounding.length > 0) {
+          yield { groundingMetadata: grounding.map((g: any) => ({ web: g })) as any };
+        }
+      }
+
+      if (toolUseBlocks.length === 0) {
+        // No custom tools requested — the model is done (pause_turn from
+        // server tools is resolved by the SDK internally in .finalMessage()).
+        return;
+      }
+
+      // Append the assistant turn (with its tool_use blocks) to history.
+      messages.push({ role: 'assistant', content: finalMessage.content });
+
+      // Emit the tool calls to the App so it can render them.
+      yield {
+        role: 'model',
+        toolCalls: toolUseBlocks.map((tu) => ({ id: tu.id, name: tu.name, args: tu.input })),
+      };
+
+      // Execute each requested (client-side) tool.
+      const toolResponses: ToolCallResponse[] = [];
+      const toolResultBlocks: Anthropic.ToolResultBlockParam[] = [];
+      for (const tu of toolUseBlocks) {
+        const result = await toolService.executeTool(tu.name, tu.input);
+        toolResponses.push({ id: tu.id, name: tu.name, response: result.response });
+        toolResultBlocks.push({
+          type: 'tool_result',
+          tool_use_id: tu.id,
+          content: JSON.stringify(result.response),
+        });
+      }
+
+      // Emit the tool results to the App, then loop for the follow-up turn.
+      yield { role: 'tool', toolCallResponses: toolResponses };
+      yield { role: 'model', content: '' };
+
+      messages.push({ role: 'user', content: toolResultBlocks });
+    }
+  };
+
+  return {
+    stream: stream(),
+    // Stateless: nothing to resolve. Kept for interface compatibility.
+    finalSession: Promise.resolve(undefined as unknown),
+  };
+};
+
+// ---------------------------------------------------------------------------
+// Title generation (non-streaming single call).
+// ---------------------------------------------------------------------------
+export const generateTitleForConversation = async (history: ChatMessage[]): Promise<string> => {
+  const anthropic = getClient();
+
+  const historyText = history
+    .filter((m) => m.content && (m.role === 'user' || m.role === 'model'))
+    .map((m) => `${m.role}: ${m.content}`)
+    .slice(-4)
+    .join('\n');
+
+  if (!historyText) return '';
+
+  const prompt = `Summarize the following conversation in 5 words or less to be used as a title. Return only the title itself, with no introductory text, quotation marks, or punctuation.\n\n---\n\n${historyText}`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 32,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    const textBlock = response.content.find(
+      (b): b is Anthropic.TextBlock => b.type === 'text'
+    );
+    return (textBlock?.text ?? '').trim().replace(/"/g, '');
+  } catch (error) {
+    console.error('Error generating title:', error);
+    return '';
+  }
 };

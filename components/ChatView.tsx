@@ -98,8 +98,10 @@ export const ChatView: React.FC<ChatViewProps> = ({ consultant, messages, isLoad
                 <p className="text-sm text-[#8D99AE]">{consultant.description}</p>
             </div>
         </div>
-        {consultant.id === 'strategic-advisor' && (
-            <button 
+        {/* Live voice ("Go Live") is disabled: it relied on Gemini's real-time
+            native-audio API, which Anthropic does not provide. */}
+        {false && (
+            <button
                 onClick={onStartLiveSession}
                 className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-[#D90429] rounded-lg hover:bg-[#EF233C] transition-colors"
                 aria-label="Start live voice session"
