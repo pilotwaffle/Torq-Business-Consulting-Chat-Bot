@@ -14,7 +14,11 @@ import { Consultant, ChatMessage, ToolCallResponse, Attachment } from '../types'
 import * as toolService from './toolService';
 
 const MODEL = 'claude-sonnet-5';
-const MAX_TOKENS = 8192;
+// claude-sonnet-5 runs adaptive thinking by default (thinking counts against
+// max_tokens). Give generous headroom so a thinking-heavy turn doesn't truncate
+// the visible answer. Streaming is used, so a large cap doesn't risk HTTP timeouts.
+const MAX_TOKENS = 32000;
+const TITLE_MAX_TOKENS = 32;
 
 let client: Anthropic | null = null;
 
@@ -37,16 +41,34 @@ const getClient = (): Anthropic => {
 // the paired tool outputs are a following `user` message with `tool_result`
 // blocks.
 
+// Anthropic accepts only these image media types for base64 image blocks.
+const SUPPORTED_IMAGE_MEDIA_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+] as const;
+type SupportedImageMediaType = (typeof SUPPORTED_IMAGE_MEDIA_TYPES)[number];
+
+function isSupportedImageMediaType(m: string): m is SupportedImageMediaType {
+  return (SUPPORTED_IMAGE_MEDIA_TYPES as readonly string[]).includes(m);
+}
+
 function attachmentsToBlocks(attachments?: Attachment[]): Anthropic.ContentBlockParam[] {
   const blocks: Anthropic.ContentBlockParam[] = [];
   if (!attachments) return blocks;
   for (const att of attachments) {
     if (att.source === 'base64') {
+      // Skip unsupported image types rather than sending them and getting a 400.
+      if (!isSupportedImageMediaType(att.mimeType)) {
+        console.warn(`Unsupported image type "${att.mimeType}" for "${att.name}" — attachment skipped.`);
+        continue;
+      }
       blocks.push({
         type: 'image',
         source: {
           type: 'base64',
-          media_type: att.mimeType as Anthropic.Base64ImageSource['media_type'],
+          media_type: att.mimeType,
           data: att.data,
         },
       });
@@ -118,7 +140,9 @@ function buildTools(consultant: Consultant): Anthropic.ToolUnion[] | undefined {
       }
     }
     if (group.webSearch) {
-      tools.push({ type: 'web_search_20250305', name: 'web_search', max_uses: 5 } as Anthropic.ToolUnion);
+      // Dynamic-filtering web search (supported on claude-sonnet-5): results are
+      // filtered before reaching context, improving accuracy/token efficiency.
+      tools.push({ type: 'web_search_20260209', name: 'web_search', max_uses: 5 } as Anthropic.ToolUnion);
     }
   }
   return tools.length > 0 ? tools : undefined;
@@ -155,8 +179,13 @@ export const getChatResponseStream = (
       }
       userBlocks.push(...attachmentsToBlocks(attachments));
     }
-    if (userPrompt.trim() || userBlocks.length > 0) {
+    // Only prepend a text block when there is actual text — an empty-text block
+    // (or an empty content array) is rejected by the API with a 400.
+    if (userPrompt.trim()) {
       userBlocks.unshift({ type: 'text', text: userPrompt });
+    }
+    if (userBlocks.length === 0) {
+      throw new Error('Cannot send an empty message (no text and no valid attachments).');
     }
     messages.push({ role: 'user', content: userBlocks });
 
@@ -211,6 +240,11 @@ export const getChatResponseStream = (
       if (toolUseBlocks.length === 0) {
         // No custom tools requested — the model is done (pause_turn from
         // server tools is resolved by the SDK internally in .finalMessage()).
+        // Surface truncation instead of silently cutting off: adaptive thinking
+        // is on by default for claude-sonnet-5, so a heavy turn can hit the cap.
+        if (finalMessage.stop_reason === 'max_tokens') {
+          yield { content: '\n\n_[Response truncated — reached the output length limit.]_' };
+        }
         return;
       }
 
@@ -270,7 +304,7 @@ export const generateTitleForConversation = async (history: ChatMessage[]): Prom
   try {
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 32,
+      max_tokens: TITLE_MAX_TOKENS,
       messages: [{ role: 'user', content: prompt }],
     });
     const textBlock = response.content.find(
