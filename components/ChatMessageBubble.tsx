@@ -155,8 +155,9 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message })
                         remarkPlugins={[remarkGfm]}
                         components={{
                             pre: CustomCodeBlock,
-                            code({ node, inline, className, children, ...props }) {
-                                if (inline) {
+                            code({ node, className, children, ...props }) {
+                                const isInline = !String(children).includes('\n');
+                                if (isInline) {
                                     return (
                                         <code 
                                             className="bg-[#D90429]/10 text-[#D90429] dark:bg-[#D90429]/20 dark:text-red-400 px-1.5 py-1 rounded-md text-[90%]" 
