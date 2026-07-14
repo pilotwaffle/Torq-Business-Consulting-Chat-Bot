@@ -38,6 +38,7 @@ When a new file is added to ~/.claude/memory/:
 
 - No test suite exists; npm scripts are dev/build/preview only.
 - Effective gate is `npx tsc --noEmit` + `npm run build`.
+- **Operator ruling (2026-07-14):** this gate IS the repo's satisfying gate for the loop's "tests pass" condition; the absence of a `test` script is not a blocker. (See CLAUDE.md §2.)
 - Known pre-existing, out-of-scope typecheck error: `components/ChatMessageBubble.tsx` inline prop (react-markdown v9).
 
 ## Operating Loop

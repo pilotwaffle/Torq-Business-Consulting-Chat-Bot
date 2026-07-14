@@ -20,6 +20,8 @@ npm run build
 
 Both must pass before a change is merge-ready.
 
+> **Operator ruling (2026-07-14):** This gate — `npx tsc --noEmit` + `npm run build` — **is** the repo's satisfying gate under the multi-model loop's "do not stop until tests pass" condition. This repo intentionally has no automated test suite; a passing gate (with only the known `ChatMessageBubble.tsx` error below) satisfies "tests pass." Do not treat the absence of a `test` script as a blocker.
+
 **Known pre-existing, out-of-scope error:** `components/ChatMessageBubble.tsx` has an inline-prop typecheck error from react-markdown v9. It predates current work and is **not** to be "fixed" as drive-by cleanup — leave it unless a ticket explicitly scopes it. Do not let it mask *new* errors: read tsc output and confirm any failures are only this one known line.
 
 ## 3. Multi-model operating loop (active authority)
