@@ -30,15 +30,13 @@ GitHub: `pilotwaffle/Torq-Business-Consulting-Chat-Bot` (branch `main`).
   Reviewed twice; independently graded **PASS**.
 - `f6b29b1` — Recorded the operator ruling that `tsc + build` is the repo's
   satisfying gate (no test suite required).
-
-## In progress — NOT yet committed
-Branch `docs/authority-scaffold` (off `main`): corrections to the authority
-scaffolding per operator instruction — separate G1R (pre-implementation) from
-G2A (post-implementation) responsibilities; make G1R strictly read-only (removed
-Bash); correct model-tier prose to reflect `model:` aliases (not dated pins);
-add draft-review and repo-state-accuracy guidance to `CLAUDE.md`; and correct
-this file's own stale "not yet committed" line. **Uncommitted; awaiting operator
-review and approval before commit/push.**
+- `0613d5f` — Finalized the project authority scaffold: corrections to the
+  authority scaffolding per operator instruction — separated G1R
+  (pre-implementation) from G2A (post-implementation) responsibilities; made
+  G1R strictly read-only (removed Bash); corrected model-tier prose to reflect
+  `model:` aliases (not dated pins); added draft-review and
+  repo-state-accuracy guidance to `CLAUDE.md`. Merged to `main` via PR #1
+  (merge commit `78af68e`).
 
 ## Multi-model loop
 This repo runs a G1D / G1R / Builder / G2A routing loop. The role definitions
