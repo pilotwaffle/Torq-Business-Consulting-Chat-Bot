@@ -1,7 +1,7 @@
 ---
 title: torq-chatbot Project Memory
 type: memory-index
-updated: 2026-07-13
+updated: 2026-07-14
 ---
 
 # torq-chatbot — Project Memory
@@ -30,9 +30,7 @@ When a new file is added to ~/.claude/memory/:
 - `5df9032` — review follow-up fixes; on `main`, independently graded.
 - `e2a9a6f` — project-local authority files added; on `main`, graded PASS.
 - `f6b29b1` — operator ruling (tsc+build is the gate) recorded; on `main`.
-- (uncommitted, branch `docs/authority-scaffold`) — authority-scaffold
-  corrections: G1R/G2A responsibility split, G1R made read-only, model-alias
-  prose fix, draft-review + repo-accuracy guidance. Not yet committed.
+- `0613d5f` — docs: finalize authority scaffold (G1R/G2A responsibility split, G1R made read-only, model-alias prose fix, draft-review + repo-accuracy guidance); on `main`.
 
 ## Migration Facts
 
