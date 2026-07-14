@@ -27,7 +27,12 @@ When a new file is added to ~/.claude/memory/:
 ## Landed Commits (main)
 
 - `f85c160` — Gemini -> Anthropic migration; on `main`, independently graded.
-- `5df9032` — G1R follow-up fixes; on `main`, independently graded.
+- `5df9032` — review follow-up fixes; on `main`, independently graded.
+- `e2a9a6f` — project-local authority files added; on `main`, graded PASS.
+- `f6b29b1` — operator ruling (tsc+build is the gate) recorded; on `main`.
+- (uncommitted, branch `docs/authority-scaffold`) — authority-scaffold
+  corrections: G1R/G2A responsibility split, G1R made read-only, model-alias
+  prose fix, draft-review + repo-accuracy guidance. Not yet committed.
 
 ## Migration Facts
 
