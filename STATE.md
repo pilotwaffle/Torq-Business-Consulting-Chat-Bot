@@ -25,13 +25,23 @@ GitHub: `pilotwaffle/Torq-Business-Consulting-Chat-Bot` (branch `main`).
   (removed leftover `@google/genai` CDN import map; raised `max_tokens` + surface
   truncation; `web_search_20260209`; empty-turn guard; image media-type
   whitelist) and added STATE.md. Independently graded **PASS**. Build verified.
-- **In progress (not yet committed):** project-local authority files added
-  (`.claude/agents/{g1d,g1r,builder,g2a}.md`, `CLAUDE.md`, `MEMORY.md`) to make
-  the multi-model operating loop the repo's own authority. Independently reviewed;
-  awaiting operator approval to commit + push.
+- `e2a9a6f` — Added project-local authority files
+  (`.claude/agents/{g1d,g1r,builder,g2a}.md`, `CLAUDE.md`, `MEMORY.md`).
+  Reviewed twice; independently graded **PASS**.
+- `f6b29b1` — Recorded the operator ruling that `tsc + build` is the repo's
+  satisfying gate (no test suite required).
+
+## In progress — NOT yet committed
+Branch `docs/authority-scaffold` (off `main`): corrections to the authority
+scaffolding per operator instruction — separate G1R (pre-implementation) from
+G2A (post-implementation) responsibilities; make G1R strictly read-only (removed
+Bash); correct model-tier prose to reflect `model:` aliases (not dated pins);
+add draft-review and repo-state-accuracy guidance to `CLAUDE.md`; and correct
+this file's own stale "not yet committed" line. **Uncommitted; awaiting operator
+review and approval before commit/push.**
 
 ## Multi-model loop
 This repo runs a G1D / G1R / Builder / G2A routing loop. The role definitions
-now live in `.claude/agents/` and the loop is documented in `CLAUDE.md` (the
+live in `.claude/agents/` and the loop is documented in `CLAUDE.md` (the
 authority root). `MEMORY.md` is the durable factual index. Push/merge/destructive
 git actions require explicit operator approval.
