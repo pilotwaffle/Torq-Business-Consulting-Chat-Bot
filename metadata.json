@@ -1,6 +1,6 @@
 {
-  "name": "TORQ AI",
-  "description": "TORQ AI provides expert business advice through specialized AI personas powered by Google Gemini. Switch between consultants for tailored insights on strategy, marketing, finance, and operations.",
+  "name": "TORQ Chat",
+  "description": "TORQ Chat provides expert business advice through specialized AI personas powered by Anthropic Claude. Switch between consultants for tailored insights on strategy, marketing, finance, and operations.",
   "requestFramePermissions": [
     "microphone"
   ]

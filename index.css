@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+/* Class-based dark mode (useTheme toggles .dark on <html>).
+   Tailwind v4 defaults dark: to prefers-color-scheme only — without this,
+   Switch Theme flips state/localStorage but UI colors never change. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #D90429;
+  --color-primary-hover: #EF233C;
+  --color-bg-light: #F8F9FA;
+  --color-bg-dark: #2B2D42;
+  --color-surface-light: #EDF2F4;
+  --color-surface-dark: #383a51;
+  --color-surface-dark-alt: #212332;
+  --color-text-light: #2B2D42;
+  --color-text-dark: #EDF2F4;
+  --color-muted: #8D99AE;
+  --color-muted-dark: #4a4d6a;
+}

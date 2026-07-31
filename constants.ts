@@ -269,7 +269,7 @@ Provide concise, actionable, and data-driven advice. Your goal is to give a foun
       "Analyze my business plan for a new SaaS product.",
       "What are the most common pitfalls for early-stage AI startups?",
       "Draft a go-to-market strategy for a B2B AI tool.",
-      "What are the latest trends in AI for 2024?",
+      "What AI market shifts should founders watch in 2026?",
     ],
     tools: [{ webSearch: true }]
   },

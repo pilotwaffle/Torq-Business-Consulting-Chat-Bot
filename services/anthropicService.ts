@@ -1,6 +1,5 @@
 // AI service — ported from Google Gemini (@google/genai) to Anthropic Claude.
-// The file name is kept as `geminiService.ts` only to avoid churning imports;
-// it now talks to the Anthropic Messages API.
+// Talks to the Anthropic Messages API.
 //
 // SECURITY NOTE: This is a browser (Vite) app that calls Anthropic directly
 // from client-side code, so the API key is bundled and `dangerouslyAllowBrowser`

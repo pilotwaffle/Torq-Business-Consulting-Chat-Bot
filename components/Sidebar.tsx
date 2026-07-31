@@ -27,7 +27,7 @@ interface SidebarProps {
   onExportConversation: (consultantId: string, conversationId: string) => void;
 }
 
-const logoBase64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiMyQjJENDIiLz4KPHBhdGggZD0iTTEyIDEyTDIwIDIwTDI4IDEyIiBzdHJva2U9IiNFRjIzM0MiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CjxwYXRoIGQ0iTTEyIDIwTDIwIDI4TDI4IDIwIiBzdHJva2U9IiNFRkYyRjQiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+Cjwvc3ZnPgo=';
+const LOGO_SRC = '/torq-chat-logo.jpg';
 
 export const Sidebar: React.FC<SidebarProps> = ({
   consultants,
@@ -143,8 +143,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       return "New Conversation";
     }
     const firstUserMessage = conversation.messages.find(m => m.role === 'user');
-    const content = firstUserMessage?.content || conversation.messages[0].content;
-    return `${content.substring(0, 35)}${content.length > 35 ? "..." : ""}`;
+    const content = firstUserMessage?.content || conversation.messages[0]?.content || '';
+    return `${content.substring(0, 35)}${content.length > 35 ? '...' : ''}`;
   };
 
   const filteredConversations = consultantConversations.filter(conversation => {
@@ -191,8 +191,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside className={`w-80 flex flex-col bg-[#F8F9FA] dark:bg-[#212332] border-r border-[#EDF2F4] dark:border-white/10 transform transition-transform duration-300 ease-in-out z-30 fixed md:relative h-full ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
       <div className="p-4 border-b border-[#EDF2F4] dark:border-white/10 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <img src={logoBase64} alt="Logo" className="w-8 h-8 rounded-full" />
-          <h1 className="text-xl font-bold tracking-tight">TORQ AI</h1>
+          <img src={LOGO_SRC} alt="TORQ Chat" className="w-8 h-8 rounded-full object-cover" />
+          <h1 className="text-xl font-bold tracking-tight">TORQ Chat</h1>
         </div>
         <button
           onClick={onNewChat}

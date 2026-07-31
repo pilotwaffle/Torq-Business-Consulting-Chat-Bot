@@ -1,52 +1,44 @@
-# TORQ Business Consulting Chatbot
+# TORQ Chat
 
-A multi-consultant AI chat application built with React + Vite. Each consultant
-is a distinct persona (Strategic Advisor, Code Architect, Legal Intelligence,
-Retirement Planning, E-book Character Intelligence, Marketing, Finance,
-Operations) with its own system prompt and, where relevant, custom tools.
+Specialized AI consultants for strategy, code, legal, retirement, marketing, finance, and operations — powered by **Claude** (`claude-sonnet-5`).
 
-**AI provider:** [Anthropic Claude](https://www.anthropic.com/) (`claude-sonnet-5`),
-via the official `@anthropic-ai/sdk`. (Migrated from Google Gemini.)
+![TORQ Chat](public/torq-chat-logo.jpg)
 
-## Features
+## Quick start
 
-- Multiple expert consultant personas
-- Streaming responses
-- Tool/function calling (stock lookups, legal risk scoring, estate & retirement
-  planning helpers, character-development tools, etc.)
-- Web search (via Anthropic's server-side `web_search` tool) for consultants
-  that need current information
-- Image and text-file attachments
-- Conversation history with auto-generated titles
+```bash
+cd E:\torq-chatbot
+npm install
+# Set ANTHROPIC_API_KEY in .env (Console key: sk-ant-api03-…)
+npm run dev
+```
 
-> **Note:** The live voice conversation feature was removed in the migration —
-> it relied on Gemini's real-time native-audio API, which Anthropic does not
-> provide.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Run Locally
+## Scripts
 
-**Prerequisites:** Node.js
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Vite dev server |
+| `npm test` | Vitest (unit + component) |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint |
+| `npm run format` | Prettier |
 
-1. Install dependencies:
-   ```
-   npm install
-   ```
-2. Create a `.env` file (copy from `.env.example`) and set your Anthropic API key:
-   ```
-   ANTHROPIC_API_KEY=sk-ant-...
-   ```
-   Get a key at https://console.anthropic.com/settings/keys
-3. Run the app:
-   ```
-   npm run dev
-   ```
+## Product notes
 
-## ⚠️ Security
+- **8 consultants** with distinct system prompts and tools (including Anthropic web search where enabled).
+- **Streaming** chat with clean token accumulation (Strict Mode safe).
+- **History** per consultant in `localStorage` (`torq-chat-history-v1`).
+- **Export** conversations as Markdown.
+- **Shortcuts:** `Ctrl/⌘+Shift+O` new chat · Enter send · Shift+Enter newline.
 
-This is a **client-side (browser) app** that calls the Anthropic API directly.
-The API key is bundled into the shipped JavaScript and is **visible to anyone
-who loads the site**. This is fine for local/personal use only.
+## Security
 
-**Do NOT deploy this publicly with a live key.** For a public deployment, move
-the Anthropic call behind a small server-side proxy (e.g. a serverless function)
-that holds the key, and have the browser call your own endpoint instead.
+This is a **local / personal** Vite app. The Anthropic API key is injected at build time and used from the browser (`dangerouslyAllowBrowser`). **Do not deploy publicly** with a live key. For production, put the model call behind a small server proxy.
+
+Use a Console API key (`sk-ant-api03-…`), not an OAuth-style `sk-ant-oat01-…` token.
+
+## Stack
+
+React 19 · TypeScript · Vite 6 · Tailwind 4 · Anthropic SDK · Vitest · Testing Library

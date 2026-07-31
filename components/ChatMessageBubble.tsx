@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
 import { ChatMessage } from '../types';
 import { UserIcon } from './icons/UserIcon';
 import { BotIcon } from './icons/BotIcon';
@@ -12,6 +13,8 @@ import { SpinnerIcon } from './icons/SpinnerIcon';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
+  /** True while this model message is still receiving stream tokens */
+  isStreaming?: boolean;
 }
 
 const ToolArgsDisplay: React.FC<{ args: any }> = ({ args }) => {
@@ -70,7 +73,7 @@ const CustomCodeBlock: React.FC<React.DetailedHTMLProps<React.HTMLAttributes<HTM
 }
   
 
-export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message }) => {
+export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, isStreaming = false }) => {
   const { role, content, toolCalls, groundingMetadata, attachments } = message;
   const isUser = role === 'user';
   const [isCopied, setIsCopied] = useState(false);
@@ -102,9 +105,9 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message })
       )}
       
       <div
-        className={`group relative max-w-xl flex flex-col gap-2 rounded-2xl shadow-sm ${
+        className={`group relative max-w-3xl w-full flex flex-col gap-2 rounded-2xl shadow-sm ${
           isUser
-            ? 'bg-[#D90429] text-white rounded-br-none'
+            ? 'bg-[#D90429] text-white rounded-br-none max-w-xl ml-auto'
             : 'bg-[#EDF2F4] dark:bg-[#383a51] text-[#2B2D42] dark:text-[#EDF2F4] rounded-bl-none'
         }`}
       >
@@ -134,13 +137,13 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message })
                     <div className="p-3 rounded-lg bg-black/5 dark:bg-black/20">
                     <div className="flex items-center gap-2 text-sm font-semibold mb-2 text-[#8D99AE]">
                         <CodeBracketIcon className="w-5 h-5" />
-                        <span>Using Tool: <strong>{toolCalls[0].name}</strong></span>
+                        <span>Using Tool: <strong>{toolCalls[0]!.name}</strong></span>
                         {!hasContent && (
                             <SpinnerIcon className="w-4 h-4 animate-spin ml-2" />
                         )}
                     </div>
                     <div className="bg-black/5 dark:bg-black/20 p-2 rounded-md">
-                        <ToolArgsDisplay args={toolCalls[0].args} />
+                        <ToolArgsDisplay args={toolCalls[0]!.args} />
                     </div>
                     </div>
                 </div>
@@ -148,11 +151,12 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message })
             {hasContent && (
                 <div className="relative px-4 pb-3 pt-3">
                     <div className="prose prose-sm dark:prose-invert max-w-none 
-                                prose-p:my-0 prose-headings:my-0 prose-ul:my-0 prose-ol:my-0 
-                                prose-a:text-[#D90429] hover:prose-a:underline
+                                prose-p:my-2 prose-headings:my-3 prose-ul:my-2 prose-ol:my-2 
+                                prose-li:my-0.5 prose-a:text-[#D90429] hover:prose-a:underline
                                 prose-code:font-mono prose-code:before:content-[''] prose-code:after:content-['']">
                       <ReactMarkdown 
                         remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeSanitize]}
                         components={{
                             pre: CustomCodeBlock,
                             code({ node, className, children, ...props }) {
@@ -178,6 +182,12 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message })
                       >
                         {content}
                       </ReactMarkdown>
+                      {isStreaming && (
+                        <span
+                          className="inline-block w-2 h-4 ml-0.5 align-middle bg-[#D90429]/80 animate-pulse rounded-sm"
+                          aria-hidden="true"
+                        />
+                      )}
                     </div>
                     <button
                         onClick={handleCopy}
