@@ -27,6 +27,12 @@ function main() {
     );
   }
 
+  if (process.env.NODE_ENV === 'production' && config.dailyTokenBudget <= 0) {
+    console.warn(
+      '[torq-chat-bff] DAILY_TOKEN_BUDGET is unset/0 in production — spend circuit breaker is OFF. Set DAILY_TOKEN_BUDGET before public traffic.',
+    );
+  }
+
   serve(
     {
       fetch: app.fetch,
