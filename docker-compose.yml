@@ -1,0 +1,45 @@
+# Local stack for TORQ Chat BFF (Phase 1.5 deploy scaffolding)
+#
+# Vite frontend is NOT included here — run it separately:
+#   npm run dev          # from repo root (default http://localhost:3000)
+#
+# Usage:
+#   cd server && cp .env.example .env   # fill ANTHROPIC_API_KEY, SESSION_SECRET
+#   # from repo root:
+#   docker compose up --build
+#
+# BFF: http://localhost:8787/health
+#
+# Do not hardcode secrets in this file. Pass them via host env or server/.env.
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: torq-chat-bff
+    ports:
+      - "8787:8787"
+    environment:
+      NODE_ENV: production
+      PORT: "8787"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      DAILY_TOKEN_BUDGET: ${DAILY_TOKEN_BUDGET:-}
+    env_file:
+      - path: ./server/.env
+        required: false
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8787/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

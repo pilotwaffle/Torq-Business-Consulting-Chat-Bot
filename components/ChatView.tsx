@@ -197,6 +197,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <a href="/privacy.html" className="underline hover:text-[#D90429]">Privacy</a>
           {' · '}
           <a href="/terms.html" className="underline hover:text-[#D90429]">Terms</a>
+          {' · '}
+          <a href="/support.html" className="underline hover:text-[#D90429]">Support</a>
           {' · '}Ctrl/⌘+Shift+O new chat
         </p>
       </div>

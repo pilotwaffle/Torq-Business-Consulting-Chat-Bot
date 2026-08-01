@@ -9,6 +9,7 @@
 | **Owner** | King Flowers (operator) |
 | **Repo** | `pilotwaffle/Torq-Business-Consulting-Chat-Bot` |
 | **Current baseline** | `main` @ `2a46d44` — local Vite SPA, Claude client-side |
+| **Phase 3 prep (2026-08-01)** | App Store package drafted under `docs/APP-STORE-SUBMISSION.md`, `docs/APP-PRIVACY-LABELS.md`, `docs/STORE-LISTING-COPY.md`; Support page at `public/support.html`. **Not submitted** — Phase 1 + Phase 2 exit criteria still required before ASC submit. |
 
 ---
 
@@ -334,6 +335,12 @@ Creates anonymous session → `{ sessionToken, expiresAt }`
 2. Privacy labels + review notes.  
 3. Submit for review; respond to rejections.  
 
+**Prep package (drafted 2026-08-01 — do not submit until Phase 1–2 exit):**
+- `docs/APP-STORE-SUBMISSION.md` — ASC checklist, age rating, export compliance, review notes, screenshots  
+- `docs/APP-PRIVACY-LABELS.md` — nutrition label matrix (chat → BFF → Anthropic; session IDs; no tracking)  
+- `docs/STORE-LISTING-COPY.md` — title, subtitle, description, keywords, What’s New  
+- `public/support.html` — Support URL target; footer Support link in ChatView  
+
 **Exit criteria:** **Ready for Sale** or clear residual Apple feedback list.
 
 ### Phase 4 — Hardening & growth (ongoing) — **P1**
@@ -458,6 +465,7 @@ The following will be specified in a short **Tech Design** after PRD approval (n
 | Version | Date | Notes |
 |---------|------|--------|
 | v1 | 2026-08-01 | Initial complete PRD for web + iOS App Store path |
+| v1.1 notes | 2026-08-01 | Status: Phase 3 prep docs + support.html linked; no full PRD rewrite |
 
 **Approval:**
 
