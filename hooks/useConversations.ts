@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChatMessage, Conversation } from '../types';
 import { saveChatHistory, loadChatHistory, titleFromMessages } from '../services/storageService';
-import { generateTitleForConversation } from '../services/anthropicService';
+import { generateTitleForConversation } from '../services/chatApiService';
 
 const SELECTED_CONSULTANT_KEY = 'torq-chat-selected-consultant';
 

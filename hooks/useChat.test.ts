@@ -3,13 +3,13 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useChat } from '../hooks/useChat';
 import { ChatMessage, Attachment } from '../types';
 
-// Mock the anthropic service
+// Mock the chat API service
 const mockStream = vi.fn();
-vi.mock('../services/anthropicService', () => ({
+vi.mock('../services/chatApiService', () => ({
   getChatResponseStream: vi.fn(),
 }));
 
-import { getChatResponseStream } from '../services/anthropicService';
+import { getChatResponseStream } from '../services/chatApiService';
 
 function makeAsyncGenerator<T>(chunks: T[]): AsyncGenerator<T, void, undefined> {
   let index = 0;

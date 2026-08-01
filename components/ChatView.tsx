@@ -193,7 +193,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
       <div className="p-3 sm:p-4 border-t border-[#EDF2F4] dark:border-white/10 bg-white dark:bg-[#2B2D42]">
         <MessageInput onSendMessage={onSendMessage} isLoading={isLoading} />
         <p className="mt-2 text-center text-[11px] text-[#8D99AE]">
-          TORQ Chat · advice is general guidance, not professional counsel · Ctrl/⌘+Shift+O new chat
+          TORQ Chat · advice is general guidance, not professional counsel ·{' '}
+          <a href="/privacy.html" className="underline hover:text-[#D90429]">Privacy</a>
+          {' · '}
+          <a href="/terms.html" className="underline hover:text-[#D90429]">Terms</a>
+          {' · '}Ctrl/⌘+Shift+O new chat
         </p>
       </div>
     </div>
