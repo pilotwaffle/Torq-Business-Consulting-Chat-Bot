@@ -70,10 +70,10 @@ describe('MessageInput', () => {
       expect(input).toBeDisabled();
     });
 
-    it('disables send button when loading', () => {
-      renderInput(true);
-      const sendButton = screen.getByLabelText('Sending');
-      expect(sendButton).toBeDisabled();
+    it('shows stop button when loading with onStop', () => {
+      const onStop = vi.fn();
+      render(<MessageInput onSendMessage={onSendMessage} isLoading={true} onStop={onStop} />);
+      expect(screen.getByLabelText('Stop generating')).toBeDefined();
     });
 
     it('does not submit when loading', async () => {

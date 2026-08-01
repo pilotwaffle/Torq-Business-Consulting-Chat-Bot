@@ -40,6 +40,7 @@ describe('ChatView', () => {
         onSendMessage={onSendMessage}
         onRetry={onRetry}
         onToggleSidebar={onToggleSidebar}
+        apiOnline={true}
       />,
     );
   }

@@ -9,6 +9,7 @@ import { SpinnerIcon } from './icons/SpinnerIcon';
 interface MessageInputProps {
   onSendMessage: (input: string, attachment: Attachment | null) => void;
   isLoading: boolean;
+  onStop?: () => void;
 }
 
 // Keep under BFF maxBodyBytes (~1 MiB) so large files fail before upload.
@@ -40,7 +41,7 @@ const readFile = (file: File): Promise<{ data: string; source: 'base64' | 'text'
   });
 };
 
-export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isLoading }) => {
+export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isLoading, onStop }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -167,14 +168,25 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isLoa
         >
           <PaperClipIcon className="w-5 h-5" />
         </button>
-        <button
-          type="submit"
-          disabled={!canSend}
-          className="p-3 bg-[#D90429] text-white rounded-full disabled:bg-[#D90429]/60 disabled:cursor-not-allowed hover:bg-[#EF233C] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D90429] dark:focus:ring-offset-[#2B2D42] transition-colors shrink-0"
-          aria-label={isLoading ? 'Sending' : 'Send message'}
-        >
-          {isLoading ? <SpinnerIcon className="w-5 h-5 animate-spin" /> : <SendIcon className="w-5 h-5" />}
-        </button>
+        {isLoading && onStop ? (
+          <button
+            type="button"
+            onClick={onStop}
+            className="p-3 bg-[#2B2D42] text-white rounded-full hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D90429] dark:focus:ring-offset-[#2B2D42] transition-colors shrink-0"
+            aria-label="Stop generating"
+          >
+            <span className="block w-3.5 h-3.5 bg-white rounded-sm" />
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={!canSend}
+            className="p-3 bg-[#D90429] text-white rounded-full disabled:bg-[#D90429]/60 disabled:cursor-not-allowed hover:bg-[#EF233C] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D90429] dark:focus:ring-offset-[#2B2D42] transition-colors shrink-0"
+            aria-label="Send message"
+          >
+            {isLoading ? <SpinnerIcon className="w-5 h-5 animate-spin" /> : <SendIcon className="w-5 h-5" />}
+          </button>
+        )}
       </div>
     </form>
   );

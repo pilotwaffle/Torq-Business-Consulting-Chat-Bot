@@ -9,6 +9,7 @@ import {
   persistSelectedConsultantId,
 } from './hooks/useConversations';
 import { useChat } from './hooks/useChat';
+import { useApiHealth } from './hooks/useApiHealth';
 
 const App: React.FC = () => {
   const [selectedConsultantId, setSelectedConsultantId] = useState<string>(() =>
@@ -50,12 +51,13 @@ const App: React.FC = () => {
     upsertConversation,
   } = useConversations(selectedConsultantId);
 
-  const { isLoading, error, handleSendMessage, handleRetry } = useChat(
+  const { isLoading, error, handleSendMessage, handleRetry, handleStop } = useChat(
     selectedConsultantId,
     messages,
     setMessages,
     upsertConversation,
   );
+  const { online: apiOnline, refresh: refreshApiHealth } = useApiHealth();
 
   const handleSelectConsultant = (id: string) => {
     setSelectedConsultantId(id);
@@ -159,9 +161,12 @@ const App: React.FC = () => {
           messages={messages}
           isLoading={isLoading}
           error={error}
+          apiOnline={apiOnline}
           onSendMessage={handleSendMessage}
           onRetry={handleRetry}
+          onStop={handleStop}
           onToggleSidebar={toggleSidebar}
+          onRetryApiHealth={() => void refreshApiHealth()}
         />
       </main>
     </div>
