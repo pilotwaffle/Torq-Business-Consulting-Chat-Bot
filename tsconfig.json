@@ -30,11 +30,17 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
+  "include": [
+    "./**/*.ts",
+    "./**/*.tsx",
+    "./shared/**/*.json"
+  ],
   "exclude": [
     "**/*.test.ts",
     "**/*.test.tsx",
     "server/**",
     "dist/**",
-    "node_modules/**"
+    "node_modules/**",
+    "ios/**"
   ]
 }

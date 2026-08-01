@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { ChatMessage, ChatSessions, Attachment } from '../types';
 import { CONSULTANTS } from '../constants';
 import { getChatResponseStream } from '../services/chatApiService';
@@ -15,10 +15,19 @@ const generateErrorMessage = (e: any, context: 'send' | 'retry'): string => {
   if (!navigator.onLine) {
     details = 'Network issue: You seem to be offline. Please check your connection.';
   } else if (e instanceof Error) {
-    if (e.message.toLowerCase().includes('api_key')) {
+    const msg = e.message.toLowerCase();
+    if (msg.includes('abort') || e.name === 'AbortError') {
+      details = 'Generation stopped.';
+    } else if (msg.includes('api_key')) {
       details = 'API Error: There may be an issue with the service configuration.';
-    } else if (e.message.toLowerCase().includes('fetch') || e.message.toLowerCase().includes('network')) {
-      details = 'Network Error: Could not connect to the server.';
+    } else if (
+      msg.includes('fetch') ||
+      msg.includes('network') ||
+      msg.includes('failed to create chat session') ||
+      msg.includes('failed to fetch')
+    ) {
+      details =
+        'Network Error: Could not reach the TORQ Chat API. Ensure the BFF is running (default http://localhost:8787).';
     } else {
       details = 'An unexpected error occurred.';
     }
@@ -43,6 +52,8 @@ export function useChat(
     attachments?: Attachment[];
     history: ChatMessage[];
   } | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const stoppedRef = useRef(false);
 
   const processStream = useCallback(
     async (streamGenerator: AsyncGenerator<Partial<ChatMessage>, any, undefined>) => {
@@ -119,9 +130,14 @@ export function useChat(
     ) => {
       setError(null);
       setFailedMessage(null);
+      stoppedRef.current = false;
 
       const selectedConsultant = CONSULTANTS.find((c) => c.id === selectedConsultantId);
       if (!selectedConsultant) throw new Error('Selected consultant not found.');
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
       const streamGenerator = getChatResponseStream(
         selectedConsultant,
@@ -129,16 +145,26 @@ export function useChat(
         userInput,
         historyForContext,
         attachments,
+        controller.signal,
       );
 
       const finalMessages = await processStream(streamGenerator.stream);
       const finalSession = await streamGenerator.finalSession;
       setChatSessions((prev) => new Map(prev).set(selectedConsultantId, finalSession));
 
-      upsertConversation(finalMessages);
+      if (!stoppedRef.current && finalMessages.length > 0) {
+        upsertConversation(finalMessages);
+      }
     },
     [selectedConsultantId, processStream, upsertConversation],
   );
+
+  const handleStop = useCallback(() => {
+    stoppedRef.current = true;
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+  }, []);
 
   const handleSendMessage = useCallback(
     async (userInput: string, attachment: Attachment | null) => {
@@ -161,6 +187,10 @@ export function useChat(
           chatSessions.get(selectedConsultantId),
         );
       } catch (e: any) {
+        if (stoppedRef.current || e?.name === 'AbortError' || String(e?.message || '').toLowerCase().includes('abort')) {
+          // Keep partial stream content; do not wipe messages.
+          return;
+        }
         console.error('Error fetching chat response:', e);
         setError(generateErrorMessage(e, 'send'));
         setFailedMessage({
@@ -171,6 +201,7 @@ export function useChat(
         setMessages(currentMessagesForHistory);
       } finally {
         setIsLoading(false);
+        abortRef.current = null;
       }
     },
     [messages, selectedConsultantId, chatSessions, executeChatTurn, setMessages],
@@ -204,6 +235,9 @@ export function useChat(
 
       await executeChatTurn(messageToRetry, attachmentsForRetry, historyForRetry, undefined);
     } catch (e: any) {
+      if (stoppedRef.current || e?.name === 'AbortError' || String(e?.message || '').toLowerCase().includes('abort')) {
+        return;
+      }
       console.error('Error retrying chat response:', e);
       setError(generateErrorMessage(e, 'retry'));
       setFailedMessage({
@@ -214,6 +248,7 @@ export function useChat(
       setMessages([...historyForRetry, userMessage]);
     } finally {
       setIsLoading(false);
+      abortRef.current = null;
     }
   }, [failedMessage, selectedConsultantId, executeChatTurn, setMessages]);
 
@@ -247,6 +282,7 @@ export function useChat(
     failedMessage,
     handleSendMessage,
     handleRetry,
+    handleStop,
     handleEndLiveSession,
   };
 }

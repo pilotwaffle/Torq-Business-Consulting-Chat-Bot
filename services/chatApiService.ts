@@ -216,6 +216,7 @@ async function openChatStream(
   consultantId: string,
   messages: ApiMessage[],
   token: string,
+  signal?: AbortSignal,
 ): Promise<Response> {
   return fetch(`${getApiBase()}/v1/chat/stream`, {
     method: 'POST',
@@ -225,6 +226,7 @@ async function openChatStream(
       Accept: 'text/event-stream',
     },
     body: JSON.stringify({ consultantId, messages }),
+    signal,
   });
 }
 
@@ -239,18 +241,19 @@ export const getChatResponseStream = (
   prompt: string,
   history: ChatMessage[],
   attachments: Attachment[] | undefined,
+  signal?: AbortSignal,
 ) => {
   const stream = async function* (): AsyncGenerator<Partial<ChatMessage>, void, undefined> {
     const apiMessages = buildApiMessages(history, prompt, attachments);
 
     let token = await ensureSessionToken(false);
-    let res = await openChatStream(consultant.id, apiMessages, token);
+    let res = await openChatStream(consultant.id, apiMessages, token, signal);
 
     // One retry on auth failure with a fresh session.
     if (res.status === 401 || res.status === 403) {
       clearStoredSession();
       token = await ensureSessionToken(true);
-      res = await openChatStream(consultant.id, apiMessages, token);
+      res = await openChatStream(consultant.id, apiMessages, token, signal);
     }
 
     if (!res.ok) {
@@ -275,6 +278,22 @@ export const getChatResponseStream = (
     finalSession: Promise.resolve(undefined as unknown),
   };
 };
+
+/** Lightweight health probe for the offline banner. */
+export async function checkApiHealth(timeoutMs = 2500): Promise<boolean> {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    const res = await fetch(`${getApiBase()}/health`, {
+      method: 'GET',
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Local title helper (no model call in Phase 1 — BFF has no title endpoint).

@@ -1,0 +1,58 @@
+[
+  {
+    "id": "strategic-advisor",
+    "name": "Strategic Advisor",
+    "description": "High-level business strategy and long-term planning.",
+    "enableWebSearch": true,
+    "toolNames": []
+  },
+  {
+    "id": "code-architect",
+    "name": "Code Architect",
+    "description": "Software design, code review, and technical best practices.",
+    "enableWebSearch": true,
+    "toolNames": []
+  },
+  {
+    "id": "legal-intelligence-system",
+    "name": "Legal Intelligence System",
+    "description": "Legal guidance, compliance, risk, and estate planning (general principles).",
+    "enableWebSearch": true,
+    "toolNames": ["legalRiskAssessor", "complianceChecklistBuilder"]
+  },
+  {
+    "id": "retirement-planning-intelligence",
+    "name": "Retirement Planning Intelligence",
+    "description": "Personalized retirement planning guidance.",
+    "enableWebSearch": true,
+    "toolNames": []
+  },
+  {
+    "id": "ebook-character-intelligence",
+    "name": "E-book Character Intelligence",
+    "description": "Character development for fiction and educational content.",
+    "enableWebSearch": false,
+    "toolNames": []
+  },
+  {
+    "id": "marketing-guru",
+    "name": "Marketing Guru",
+    "description": "Digital marketing, branding, and customer acquisition.",
+    "enableWebSearch": true,
+    "toolNames": []
+  },
+  {
+    "id": "finance-analyst",
+    "name": "Finance Analyst",
+    "description": "Financial analysis, viability, and risk mitigation.",
+    "enableWebSearch": true,
+    "toolNames": ["getStockPrice"]
+  },
+  {
+    "id": "operations-expert",
+    "name": "Operations Expert",
+    "description": "Process efficiency, waste reduction, and productivity.",
+    "enableWebSearch": false,
+    "toolNames": []
+  }
+]

@@ -150,9 +150,14 @@ chatRoutes.post('/v1/chat/stream', requireSession, rateLimitSession, async (c) =
           systemInstruction,
           messages: body.messages,
           signal: abort.signal,
+          enableWebSearch: consultant.enableWebSearch,
+          toolNames: consultant.toolNames,
         },
         (text) => {
           void writeEvent({ type: 'delta', text });
+        },
+        (status) => {
+          void writeEvent({ type: 'delta', text: `\n_${status}_\n` });
         },
       );
 

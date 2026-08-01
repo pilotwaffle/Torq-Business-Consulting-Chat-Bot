@@ -12,9 +12,12 @@ interface ChatViewProps {
   messages: ChatMessage[];
   isLoading: boolean;
   error: string | null;
+  apiOnline?: boolean | null;
   onSendMessage: (input: string, attachment: Attachment | null) => void;
   onRetry: () => void;
+  onStop?: () => void;
   onToggleSidebar: () => void;
+  onRetryApiHealth?: () => void;
 }
 
 export const ChatView: React.FC<ChatViewProps> = ({
@@ -22,9 +25,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
   messages,
   isLoading,
   error,
+  apiOnline = null,
   onSendMessage,
   onRetry,
+  onStop,
   onToggleSidebar,
+  onRetryApiHealth,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -101,11 +107,37 @@ export const ChatView: React.FC<ChatViewProps> = ({
         </div>
         <div className="hidden sm:flex items-center gap-2 text-xs text-[#8D99AE] shrink-0">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#EDF2F4] dark:bg-[#383a51]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            Claude · TORQ Chat
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                apiOnline === false ? 'bg-amber-500' : 'bg-emerald-500'
+              }`}
+            />
+            {apiOnline === false ? 'API offline' : 'Claude · TORQ Chat'}
           </span>
         </div>
       </header>
+
+      {apiOnline === false && (
+        <div
+          className="px-4 py-2 bg-amber-500/15 border-b border-amber-500/40 text-amber-900 dark:text-amber-100 text-sm flex flex-wrap items-center justify-between gap-2"
+          role="status"
+        >
+          <span>
+            TORQ Chat API is offline. Start the BFF on port 8787 (
+            <code className="text-xs">cd server && npm run dev</code>
+            ), then retry.
+          </span>
+          {onRetryApiHealth && (
+            <button
+              type="button"
+              onClick={onRetryApiHealth}
+              className="shrink-0 px-2.5 py-1 rounded-md bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700"
+            >
+              Check again
+            </button>
+          )}
+        </div>
+      )}
 
       <div ref={chatContainerRef} onScroll={handleScroll} className="overflow-y-auto px-4 sm:px-6 py-6 space-y-6">
         {messages.length === 0 && !isLoading && (
@@ -191,7 +223,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       )}
 
       <div className="p-3 sm:p-4 border-t border-[#EDF2F4] dark:border-white/10 bg-white dark:bg-[#2B2D42]">
-        <MessageInput onSendMessage={onSendMessage} isLoading={isLoading} />
+        <MessageInput onSendMessage={onSendMessage} isLoading={isLoading} onStop={onStop} />
         <p className="mt-2 text-center text-[11px] text-[#8D99AE]">
           TORQ Chat · advice is general guidance, not professional counsel ·{' '}
           <a href="/privacy.html" className="underline hover:text-[#D90429]">Privacy</a>
