@@ -2,23 +2,30 @@
 
 _Last updated: 2026-08-01_
 
-| Phase | Status | Notes |
-|-------|--------|--------|
-| **0** Decisions | ✅ Done | PRD approved; defaults locked |
-| **1** BFF + de-keyed web | ✅ Merged | PR #5 → `main` (`557ba10`) |
-| **2** Capacitor iOS shell | ✅ This PR | Windows: scaffold + sync; Mac: Xcode/TestFlight |
-| **3** App Store package | ✅ This PR | Docs + listing + privacy labels + support page |
-| **4** Hardening / growth | 🟡 Partial | Deploy scaffold done; email auth / cloud history deferred |
+| Phase | Status | Evidence |
+|-------|--------|----------|
+| **0** Decisions | ✅ | PRD approved |
+| **1** BFF + de-keyed web | ✅ Merged | PR #5 |
+| **2** Capacitor iOS shell | ✅ Merged | PR #6 |
+| **3** App Store package docs | ✅ Merged | PR #6 (`docs/APP-STORE-*`) |
+| **4** Hardening | ✅ This change | Budget warn, message caps, scripts, STATE |
 
-## Operator still required (cannot automate from Windows)
+## Complete for software delivery (repo)
 
-1. **Host BFF** on Railway (use `server/Dockerfile` + env vars).
-2. **Set production domain** → fill URL placeholders in App Store docs.
-3. **Mac**: `VITE_TORQ_API_BASE=https://… npm run cap:sync` → Xcode sign → TestFlight → App Store Connect submit.
-4. **Apple Developer Program** account + App Store Connect listing upload.
+All PRD software phases that can be finished **without Apple/Mac/Railway credentials** are in `main` after Phase 4 merge.
 
-## Gates green (local)
+## Remaining human/ops checklist (App Store live)
 
-- Client: `tsc` + 115 tests + build  
-- Server: 12 tests + build  
-- Client dist: no `sk-ant`
+| Step | Owner | Status |
+|------|--------|--------|
+| Railway (or other) BFF deploy + secrets | Operator | ☐ |
+| Production HTTPS domain for web + privacy/support URLs | Operator | ☐ |
+| Mac: `cap:sync` with prod API URL, Xcode signing | Operator | ☐ |
+| TestFlight internal test | Operator | ☐ |
+| App Store Connect listing + screenshots | Operator | ☐ |
+| Submit for review | Operator | ☐ |
+
+## Docs map
+- PRD: `docs/PRD-TORQ-CHAT-WEB-IOS-v1.md`
+- iOS: `docs/IOS-SETUP.md`
+- Store: `docs/APP-STORE-SUBMISSION.md`, `STORE-LISTING-COPY.md`, `APP-PRIVACY-LABELS.md`

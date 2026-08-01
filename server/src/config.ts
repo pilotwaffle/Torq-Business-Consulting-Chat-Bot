@@ -38,8 +38,13 @@ export const config = {
   sessionSecret: session.secret,
   sessionSecretEphemeral: session.ephemeral,
   corsOrigins: parseOrigins(process.env.CORS_ORIGINS),
-  /** Soft global daily token budget (input + output). 0 = disabled. */
+  /**
+   * Soft global daily token budget (input + output).
+   * 0 = disabled (dev only). Production should set DAILY_TOKEN_BUDGET.
+   */
   dailyTokenBudget: Number(process.env.DAILY_TOKEN_BUDGET ?? 0) || 0,
+  /** Max characters per chat message (prompt stuffing guard). */
+  maxMessageChars: Number(process.env.MAX_MESSAGE_CHARS ?? 64_000) || 64_000,
   /** Session JWT lifetime in seconds (24h). */
   sessionTtlSeconds: 60 * 60 * 24,
   /** Rate limit: max requests per session per window. */
