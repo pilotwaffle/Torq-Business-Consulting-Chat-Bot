@@ -1,0 +1,30 @@
+{
+  "name": "torq-chat-bff",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TORQ Chat Backend-for-Frontend — holds ANTHROPIC_API_KEY server-side",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0",
+    "@hono/node-server": "^1.14.1",
+    "hono": "^4.7.7",
+    "jose": "^6.0.10",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "tsx": "^4.19.3",
+    "typescript": "~5.8.2",
+    "vitest": "^3.1.1"
+  }
+}

@@ -2,27 +2,27 @@
 
 ## 1. What this project is
 
-TORQ Business Consulting chatbot. A **client-side** single-page app: Vite 6 + React 19 + TypeScript. The AI provider is **Anthropic `claude-sonnet-5`** via `@anthropic-ai/sdk` (migrated from Google Gemini).
+TORQ Chat: Vite 6 + React 19 web client + **Hono BFF** (`server/`). Model is **Anthropic `claude-sonnet-5`**.
 
-The Anthropic call runs **in the browser**: the API key is bundled into the build and the SDK is initialized with `dangerouslyAllowBrowser: true`. This is acceptable ONLY because this is a **personal / local-use** app.
+**Architecture (Phase 1+):** The browser never holds `ANTHROPIC_API_KEY`. Client → `POST /v1/session` + `POST /v1/chat/stream` on the BFF (`VITE_TORQ_API_BASE`, default `http://localhost:8787`). Anthropic SDK and key live only under `server/`.
 
-- **Do NOT deploy this publicly with a live API key.** A bundled key is extractable by anyone who loads the page. Public deployment requires moving the Anthropic call behind a server/proxy first.
-- GitHub remote: `pilotwaffle/Torq-Business-Consulting-Chat-Bot` (branch `main`).
+- PRD: `docs/PRD-TORQ-CHAT-WEB-IOS-v1.md` (approved 2026-08-01).
+- GitHub: `pilotwaffle/Torq-Business-Consulting-Chat-Bot` (branch `main`).
+- Secrets: `server/.env` (`ANTHROPIC_API_KEY`, `SESSION_SECRET`, optional `DAILY_TOKEN_BUDGET`). Never commit `.env`.
 
 ## 2. Build / test gate
 
-There is **NO test suite**. `package.json` scripts are dev / build / preview only. The effective gate for any change is:
-
 ```
+# Client (repo root)
 npx tsc --noEmit
+npm test
 npm run build
+
+# BFF
+cd server && npm test && npm run build
 ```
 
-Both must pass before a change is merge-ready.
-
-> **Operator ruling (2026-07-14):** This gate — `npx tsc --noEmit` + `npm run build` — **is** the repo's satisfying gate under the multi-model loop's "do not stop until tests pass" condition. This repo intentionally has no automated test suite; a passing gate (with only the known `ChatMessageBubble.tsx` error below) satisfies "tests pass." Do not treat the absence of a `test` script as a blocker.
-
-**Known pre-existing, out-of-scope error:** `components/ChatMessageBubble.tsx` has an inline-prop typecheck error from react-markdown v9. It predates current work and is **not** to be "fixed" as drive-by cleanup — leave it unless a ticket explicitly scopes it. Do not let it mask *new* errors: read tsc output and confirm any failures are only this one known line.
+All of the above must pass before merge-ready.
 
 ## 3. Multi-model operating loop (active authority)
 

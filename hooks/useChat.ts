@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { ChatMessage, ChatSessions, Attachment } from '../types';
 import { CONSULTANTS } from '../constants';
-import { getChatResponseStream } from '../services/anthropicService';
+import { getChatResponseStream } from '../services/chatApiService';
 
 const generateErrorMessage = (e: any, context: 'send' | 'retry'): string => {
   const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

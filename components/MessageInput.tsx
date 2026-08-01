@@ -11,7 +11,8 @@ interface MessageInputProps {
   isLoading: boolean;
 }
 
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+// Keep under BFF maxBodyBytes (~1 MiB) so large files fail before upload.
+const MAX_SIZE = 900 * 1024; // 900 KiB
 
 const readFile = (file: File): Promise<{ data: string; source: 'base64' | 'text' }> => {
   return new Promise((resolve, reject) => {
@@ -83,7 +84,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isLoa
     if (!file) return;
 
     if (file.size > MAX_SIZE) {
-      setFileError('File too large. Maximum size is 10MB.');
+      setFileError('File too large. Maximum size is 900KB (server limit).');
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }

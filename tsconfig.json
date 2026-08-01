@@ -32,6 +32,9 @@
   },
   "exclude": [
     "**/*.test.ts",
-    "**/*.test.tsx"
+    "**/*.test.tsx",
+    "server/**",
+    "dist/**",
+    "node_modules/**"
   ]
 }

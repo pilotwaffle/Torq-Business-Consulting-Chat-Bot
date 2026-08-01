@@ -12,12 +12,12 @@ vi.mock('../services/storageService', () => ({
   }),
 }));
 
-vi.mock('../services/anthropicService', () => ({
+vi.mock('../services/chatApiService', () => ({
   generateTitleForConversation: vi.fn(() => Promise.resolve('')),
 }));
 
 import { saveChatHistory, loadChatHistory } from '../services/storageService';
-import { generateTitleForConversation } from '../services/anthropicService';
+import { generateTitleForConversation } from '../services/chatApiService';
 
 function makeConversation(
   id: string,
