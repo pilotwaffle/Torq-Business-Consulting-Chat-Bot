@@ -173,14 +173,83 @@ server/
     auth.test.ts
     chat-validation.test.ts
   .env.example
+  Dockerfile              # multi-stage production image
+  railway.toml            # Railway config-as-code
+  .dockerignore
   package.json
   tsconfig.json
   vitest.config.ts
   README.md
 ```
 
+## Production deploy (Phase 1.5)
+
+Scaffolding so iOS / remote clients can eventually hit a real API (enabler for Phase 2–3). **No secrets belong in git** — set them only in the host platform.
+
+### Docker (local / any host)
+
+From the **repo root**:
+
+```bash
+# Provide secrets via shell env or server/.env (gitignored)
+export ANTHROPIC_API_KEY=...
+export SESSION_SECRET=...   # ≥16 chars; required when NODE_ENV=production
+docker compose up --build
+
+curl http://localhost:8787/health
+```
+
+Vite is **not** in compose — run the SPA separately from the repo root (`npm run dev`).
+
+Or build the image directly:
+
+```bash
+cd server
+docker build -t torq-chat-bff .
+docker run --rm -p 8787:8787 \
+  -e ANTHROPIC_API_KEY \
+  -e SESSION_SECRET \
+  -e CORS_ORIGINS="https://your-web-app.example" \
+  torq-chat-bff
+```
+
+### Railway
+
+1. Create a Railway service from this repo; set **Root Directory** to `server` (so `Dockerfile` + `railway.toml` resolve).
+2. Railway uses `builder = "DOCKERFILE"` from `server/railway.toml`, healthcheck on `GET /health`.
+3. Add variables in the Railway dashboard (or `railway variables set ...`):
+
+| Variable | Required | Notes |
+|----------|----------|--------|
+| `ANTHROPIC_API_KEY` | **Yes** | Server-side only; chat returns 503 if missing |
+| `SESSION_SECRET` | **Yes** | HS256 JWT secret, **≥16 characters**; process refuses to start in production without it |
+| `CORS_ORIGINS` | Recommended | Comma-separated allow-list (e.g. `https://app.example.com`). Defaults to localhost Vite origins if unset |
+| `DAILY_TOKEN_BUDGET` | Optional | Soft global daily token budget (input+output). Unset/0 = disabled |
+| `PORT` | Optional | Railway injects `PORT` automatically; app reads it (local default `8787`) |
+
+4. Deploy. Confirm:
+
+```bash
+curl https://<your-railway-host>/health
+# → {"ok":true,"version":"1.0.0"}
+```
+
+5. Point clients (Vite env / future iOS base URL) at that host. Keep the Anthropic key **only** on Railway — never in the app binary or frontend bundle.
+
+### Railway env vars (checklist)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `ANTHROPIC_API_KEY` | Yes (for chat) | — | Anthropic API key (never exposed to clients) |
+| `SESSION_SECRET` | Prod: yes | random (dev) | HS256 signing secret (≥16 chars) |
+| `CORS_ORIGINS` | Recommended | localhost Vite | Comma-separated allow-list |
+| `DAILY_TOKEN_BUDGET` | No | disabled | Soft global daily token budget |
+| `PORT` | No | `8787` / Railway-injected | HTTP port |
+
 ## Phase 1 scope / non-goals
 
 **In scope:** health, anonymous session JWT, authenticated SSE chat, server-side consultant prompts, rate limit, CORS, basic tests.
 
-**Not in scope (later phases):** tool-use loop, web search, conversation persistence, multi-replica rate limiting, OAuth user accounts, client wiring (`App.tsx` / Vite proxy).
+**Phase 1.5 (this scaffolding):** Dockerfile, Railway config, docker-compose for local BFF, deploy docs — no secrets in repo, no auto-commit/push.
+
+**Not in scope (later phases):** tool-use loop, web search, conversation persistence, multi-replica rate limiting, OAuth user accounts, client wiring (`App.tsx` / Vite proxy), iOS native client.

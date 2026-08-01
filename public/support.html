@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Support — TORQ Chat</title>
+    <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #edf2f4;
+        --card: #ffffff;
+        --text: #2b2d42;
+        --muted: #8d99ae;
+        --accent: #d90429;
+        --border: rgba(43, 45, 66, 0.12);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #2b2d42;
+          --card: #383a51;
+          --text: #edf2f4;
+          --muted: #8d99ae;
+          --border: rgba(237, 242, 244, 0.12);
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+      }
+      main {
+        max-width: 44rem;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: var(--card);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      }
+      h1 { font-size: 1.75rem; margin: 0 0 0.25rem; }
+      h2 { font-size: 1.15rem; margin-top: 1.75rem; }
+      p, li { color: var(--text); }
+      .meta { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+      a { color: var(--accent); }
+      .brand { font-weight: 600; letter-spacing: 0.02em; }
+      footer { margin-top: 2rem; font-size: 0.85rem; color: var(--muted); }
+      .card-note {
+        margin-top: 1rem;
+        padding: 1rem 1.1rem;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--accent) 6%, transparent);
+      }
+      code {
+        font-size: 0.9em;
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+        background: color-mix(in srgb, var(--muted) 18%, transparent);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="brand">TORQ Chat · TORQ Business Solutions</p>
+      <h1>Support</h1>
+      <p class="meta">Last updated: August 1, 2026</p>
+
+      <p>
+        Need help with <strong>TORQ Chat</strong>? Use this page for product support,
+        App Store review contact context, and quick troubleshooting.
+      </p>
+
+      <h2>1. Contact TORQ</h2>
+      <p>
+        Email support for TORQ Chat through TORQ Business Solutions. Replace the
+        placeholder below with your live operator inbox before production launch:
+      </p>
+      <div class="card-note">
+        <p style="margin: 0">
+          <strong>Support email:</strong>
+          <a href="mailto:support@torq-business.example">support@torq-business.example</a>
+          <span style="color: var(--muted)">(placeholder — set production address)</span>
+        </p>
+        <p style="margin: 0.75rem 0 0">
+          Please include: device type (web or iPhone), approximate time of the issue,
+          what you tried, and a short description. Do <strong>not</strong> send API keys,
+          passwords, or confidential customer data you would not want processed for support.
+        </p>
+      </div>
+
+      <h2>2. What TORQ Chat is</h2>
+      <p>
+        TORQ Chat is an AI multi-consultant assistant for business questions (strategy,
+        marketing, operations, finance framing, and more). Responses are
+        <strong>general guidance only</strong> and are not legal, financial, tax, medical,
+        or other licensed professional advice.
+      </p>
+
+      <h2>3. Common questions</h2>
+      <ul>
+        <li>
+          <strong>Do I need an account?</strong>
+          No. v1 uses an anonymous session. History is stored on your device.
+        </li>
+        <li>
+          <strong>Where do my messages go?</strong>
+          Messages are sent over HTTPS to the TORQ API so we can generate replies.
+          The TORQ API may use Anthropic (or another configured model provider) as a
+          subprocessor. See our
+          <a href="/privacy.html">Privacy Policy</a>.
+        </li>
+        <li>
+          <strong>How do I clear my chats?</strong>
+          Delete conversations in the app when available, or clear the site/app storage
+          for TORQ Chat in your browser or iOS app settings.
+        </li>
+        <li>
+          <strong>Something failed mid-reply?</strong>
+          Check your network connection and try again. If the service is rate-limited,
+          wait briefly and retry. If problems continue, email support with the time of the error.
+        </li>
+        <li>
+          <strong>Microphone permission?</strong>
+          Live voice is not part of TORQ Chat v1. You should not be prompted for microphone access.
+        </li>
+      </ul>
+
+      <h2>4. Legal pages</h2>
+      <ul>
+        <li><a href="/privacy.html">Privacy Policy</a></li>
+        <li><a href="/terms.html">Terms of Use</a></li>
+        <li><a href="/support.html">Support</a> (this page)</li>
+      </ul>
+
+      <h2>5. App Store &amp; safety</h2>
+      <p>
+        For App Store review, TORQ Chat does not require a demo login. Open the app and
+        start chatting. Bundle ID: <code>com.torq.chat</code>.
+      </p>
+      <p>
+        If you believe you have found a security issue, email support with
+        <strong>[Security]</strong> in the subject line. Do not include live secrets in
+        public forums.
+      </p>
+
+      <footer>
+        <p>
+          © 2026 TORQ Business Solutions ·
+          <a href="/">TORQ Chat</a>
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

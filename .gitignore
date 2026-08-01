@@ -30,3 +30,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Capacitor / iOS local artifacts (keep project sources when ios/ is committed)
+ios/App/Pods/
+ios/App/App/public/
+ios/DerivedData/
+*.xcuserstate
+xcuserdata/

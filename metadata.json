@@ -1,7 +1,5 @@
 {
   "name": "TORQ Chat",
   "description": "TORQ Chat provides expert business advice through specialized AI personas powered by Anthropic Claude. Switch between consultants for tailored insights on strategy, marketing, finance, and operations.",
-  "requestFramePermissions": [
-    "microphone"
-  ]
+  "requestFramePermissions": []
 }
